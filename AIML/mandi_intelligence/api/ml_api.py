@@ -38,7 +38,9 @@ class RecommendRequest(BaseModel):
     """Request model for mandi recommendations"""
     crop: str = Field(..., description="Crop name (Onion, Tomato, or Potato)")
     quantity: float = Field(..., gt=0, description="Quantity to sell in kg")
-    farmer_location: Optional[str] = Field("Gandhinagar", description="Farmer's current location")
+    farmer_location: Optional[str] = Field(None, description="Farmer's current location")
+    latitude: Optional[float] = Field(None, description="Farmer's latitude")
+    longitude: Optional[float] = Field(None, description="Farmer's longitude")
 
 
 class MandiOption(BaseModel):
@@ -175,11 +177,13 @@ async def get_recommendation(request: RecommendRequest):
     
     try:
         # Get recommendation from arbitrage engine
-        result = engine.get_optimal_strategy(
-            latest_data,
-            predictor,
-            request.crop,
-            request.quantity
+        result = engine.get_best_selling_strategy(
+            current_qty_kg=request.quantity,
+            crop=request.crop,
+            current_location=request.farmer_location,
+            latitude=request.latitude,
+            longitude=request.longitude,
+            df_current=latest_data
         )
         
         # Format best option

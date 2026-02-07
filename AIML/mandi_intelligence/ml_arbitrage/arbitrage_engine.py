@@ -282,8 +282,10 @@ class ArbitrageEngine:
         self,
         current_qty_kg: float,
         crop: str,
-        current_location: str,
-        df_current: pd.DataFrame,
+        current_location: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        df_current: pd.DataFrame = None,
         df_forecast: Optional[pd.DataFrame] = None,
         crop_perishability_factor: Optional[float] = None
     ) -> Dict:
@@ -296,7 +298,9 @@ class ArbitrageEngine:
         Args:
             current_qty_kg: Quantity to sell (kg)
             crop: Crop name
-            current_location: Farmer's location (not used in current version)
+            current_location: Farmer's location name (optional)
+            latitude: Farmer's latitude (optional)
+            longitude: Farmer's longitude (optional)
             df_current: DataFrame with current prices for all mandis
             df_forecast: Optional DataFrame with future price forecasts
             crop_perishability_factor: Override default perishability
@@ -315,13 +319,22 @@ class ArbitrageEngine:
         current_data = df_current[df_current['Crop'] == crop].copy()
         
         # DYNAMIC DISTANCE CALCULATION
-        # Calculate distances from farmer's actual location, not Gandhinagar
-        if current_location:
-            mandis = current_data['Mandi_Name'].unique().tolist()
-            farmer_distances = calculate_distances_from_location(current_location, mandis)
+        # Calculate distances from farmer's actual location
+        # Priority: Lat/Lon > Location Name > Default (Gandhinagar)
+        
+        farmer_loc_ref = None
+        if latitude is not None and longitude is not None:
+            farmer_loc_ref = (latitude, longitude)
+        elif current_location:
+            farmer_loc_ref = current_location
+        else:
+            farmer_loc_ref = 'Gandhinagar'
             
-            # Update distances in the dataframe
-            current_data['Distance_km'] = current_data['Mandi_Name'].map(farmer_distances)
+        mandis = current_data['Mandi_Name'].unique().tolist()
+        farmer_distances = calculate_distances_from_location(farmer_loc_ref, mandis)
+        
+        # Update distances in the dataframe
+        current_data['Distance_km'] = current_data['Mandi_Name'].map(farmer_distances)
         
         mandi_options = []
         for _, row in current_data.iterrows():

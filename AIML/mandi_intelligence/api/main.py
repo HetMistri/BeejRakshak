@@ -39,7 +39,9 @@ class RecommendRequest(BaseModel):
     """Request model for mandi recommendations"""
     crop: str = Field(..., description="Crop name (Onion, Tomato, or Potato)")
     quantity: float = Field(..., gt=0, description="Quantity to sell in kg")
-    farmer_location: Optional[str] = Field("Gandhinagar", description="Farmer's current location")
+    farmer_location: Optional[str] = Field(None, description="Farmer's current location")
+    latitude: Optional[float] = Field(None, description="Farmer's latitude")
+    longitude: Optional[float] = Field(None, description="Farmer's longitude")
 
 
 class MandiOption(BaseModel):
@@ -95,6 +97,9 @@ async def startup_event():
     try:
         # Load dataset (use parent directory path)
         dataset_path = Path(__file__).parent.parent / 'dataset' / 'commodity_price.csv'
+        print(f"DEBUG: Dataset Path: {dataset_path}")
+        print(f"DEBUG: Exists? {dataset_path.exists()}")
+        
         data_loader.load_data(str(dataset_path))
         df = data_loader.filter_and_process(days=90)
         
@@ -116,6 +121,8 @@ async def startup_event():
         
     except Exception as e:
         print(f"⚠️  Error during startup: {e}")
+        import traceback
+        traceback.print_exc()
         print("   System will operate in fallback mode")
 
 
@@ -166,12 +173,12 @@ async def get_response(request: RecommendRequest):
             detail="System not ready. Models are still loading."
         )
     
-    # Validate crop
-    valid_crops = ['Onion', 'Tomato', 'Potato']
-    if request.crop not in valid_crops:
+    # Validate crop against actual dataset (not hardcoded list)
+    available_crops = latest_data['Crop'].unique().tolist()
+    if request.crop not in available_crops:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid crop. Must be one of: {', '.join(valid_crops)}"
+            detail=f"Crop '{request.crop}' not found in database. Available crops: {', '.join(available_crops)}"
         )
     
     try:
@@ -203,6 +210,8 @@ async def get_response(request: RecommendRequest):
             current_qty_kg=request.quantity,
             crop=request.crop,
             current_location=request.farmer_location,
+            latitude=request.latitude,
+            longitude=request.longitude,
             df_current=df_current,
             df_forecast=df_forecast
         )

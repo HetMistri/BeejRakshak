@@ -28,6 +28,18 @@ app = FastAPI(
 app.mount("/mandi", mandi_app)
 app.mount("/schemes", scrapbot_app)
 
+@app.on_event("startup")
+async def startup_event():
+    """Trigger startup events for mounted sub-applications"""
+    print("🚀 Starting BeejRakshak Unified API...")
+    
+    # Manually trigger mandi_app startup
+    # FastAPI mounted apps don't auto-run their startup events
+    from mandi_intelligence.api.main import startup_event as mandi_startup
+    await mandi_startup()
+    
+    print("✅ All services initialized!")
+
 @app.get("/")
 def root():
     return {
