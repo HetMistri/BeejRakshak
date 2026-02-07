@@ -1026,18 +1026,19 @@ function MandiTab({ profile }) {
   const [recommendation, setRecommendation] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const mandiBase = (import.meta.env.VITE_MANDI_API_BASE || '/mandi-api').replace(/\/$/, '')
 
   /* ── Check API health + fetch mandis on mount ── */
   const initApi = useCallback(async () => {
     setApiOnline(null)
     try {
-      const hRes = await fetch('/mandi-api/health')
+      const hRes = await fetch(`${mandiBase}/health`)
       if (!hRes.ok) throw new Error('API not reachable')
       const health = await hRes.json()
       if (!health.models_loaded) throw new Error('ML models not loaded yet')
       setApiOnline(true)
 
-      const mRes = await fetch('/mandi-api/mandis')
+      const mRes = await fetch(`${mandiBase}/mandis`)
       if (mRes.ok) {
         const mData = await mRes.json()
         setMandisList(mData.mandis || [])
@@ -1088,7 +1089,7 @@ function MandiTab({ profile }) {
         body.farmer_location = profile.village || profile.district
       }
 
-      const res = await fetch('/mandi-api/response', {
+      const res = await fetch(`${mandiBase}/response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
