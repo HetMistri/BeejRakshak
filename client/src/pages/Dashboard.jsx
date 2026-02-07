@@ -196,6 +196,310 @@ export default function Dashboard({ session, onSignOut }) {
 }
 
 /* ═══════════════════════════════════════════════════
+   WEATHER FARM CALENDAR — CLEAN MONTH VIEW WITH ALERTS
+   ═══════════════════════════════════════════════════ */
+
+const FARM_ACTIVITIES = [
+  { id: 'irrigation', label: 'Irrigation', icon: '💧', short: 'Water' },
+  { id: 'sowing', label: 'Sowing / Seeding', icon: '🌱', short: 'Sow' },
+  { id: 'spraying', label: 'Pesticide Spray', icon: '🛡️', short: 'Spray' },
+  { id: 'harvesting', label: 'Harvesting', icon: '🌾', short: 'Harvest' },
+  { id: 'fertilizing', label: 'Fertilizing', icon: '🧪', short: 'Fertilize' },
+]
+
+function scoreActivities(dayData) {
+  const avgTemp = dayData.reduce((s, d) => s + d.main.temp, 0) / dayData.length
+  const avgHum = dayData.reduce((s, d) => s + d.main.humidity, 0) / dayData.length
+  const maxWind = Math.max(...dayData.map(d => (d.wind?.speed || 0) * 3.6))
+  const avgWind = dayData.reduce((s, d) => s + (d.wind?.speed || 0) * 3.6, 0) / dayData.length
+  const totalRain = dayData.reduce((s, d) => s + (d.rain?.['3h'] || 0), 0)
+  const hasRain = totalRain > 0.5
+  const heavyRain = totalRain > 8
+  const avgClouds = dayData.reduce((s, d) => s + (d.clouds?.all || 0), 0) / dayData.length
+  const results = {}
+
+  if (heavyRain) {
+    results.irrigation = { status: 'avoid', reason: `Heavy rain (${totalRain.toFixed(0)}mm) — save water`, tip: 'Let rain handle irrigation naturally' }
+  } else if (hasRain) {
+    results.irrigation = { status: 'caution', reason: `Light rain (${totalRain.toFixed(1)}mm) — reduce watering`, tip: 'Supplement only if soil is very dry' }
+  } else if (avgTemp > 30 && avgHum < 50) {
+    results.irrigation = { status: 'go', reason: `Hot & dry (${avgTemp.toFixed(0)}°C) — crops need water`, tip: 'Irrigate early morning or late evening' }
+  } else {
+    results.irrigation = { status: 'go', reason: `No rain — good day to irrigate`, tip: 'Check soil moisture before irrigating' }
+  }
+
+  if (heavyRain) {
+    results.sowing = { status: 'avoid', reason: `Heavy rain will wash away seeds`, tip: 'Wait for dry spell of 2-3 days' }
+  } else if (maxWind > 25) {
+    results.sowing = { status: 'avoid', reason: `Strong wind (${maxWind.toFixed(0)} km/h) — seeds scatter`, tip: 'Wait for wind below 15 km/h' }
+  } else if (avgTemp < 10 || avgTemp > 40) {
+    results.sowing = { status: 'caution', reason: `Temp ${avgTemp.toFixed(0)}°C outside germination range`, tip: 'Choose tolerant varieties' }
+  } else if (!hasRain && avgWind < 15 && avgTemp >= 15 && avgTemp <= 35) {
+    results.sowing = { status: 'go', reason: `Calm, good temp (${avgTemp.toFixed(0)}°C)`, tip: 'Ideal — sow in the morning' }
+  } else {
+    results.sowing = { status: 'caution', reason: `Marginal conditions`, tip: 'Sow if soil is workable' }
+  }
+
+  if (hasRain) {
+    results.spraying = { status: 'avoid', reason: `Rain will wash off chemicals`, tip: 'Need 4-6 dry hours to absorb' }
+  } else if (maxWind > 15) {
+    results.spraying = { status: 'avoid', reason: `Wind ${maxWind.toFixed(0)} km/h — spray drift`, tip: 'Wait for calm morning' }
+  } else if (avgHum > 80) {
+    results.spraying = { status: 'caution', reason: `Humidity ${avgHum.toFixed(0)}% — slow drying`, tip: 'Spray when dew evaporates' }
+  } else if (avgWind < 10 && !hasRain && avgHum < 70) {
+    results.spraying = { status: 'go', reason: `Low wind, dry, moderate humidity`, tip: 'Perfect spray window' }
+  } else {
+    results.spraying = { status: 'caution', reason: `Acceptable but not ideal`, tip: 'Spray in calmest hours' }
+  }
+
+  if (hasRain) {
+    results.harvesting = { status: 'avoid', reason: `Wet — high crop moisture`, tip: 'Wet harvest increases spoilage' }
+  } else if (avgHum > 80) {
+    results.harvesting = { status: 'caution', reason: `Humidity ${avgHum.toFixed(0)}% — slow drying`, tip: 'Harvest midday when humidity drops' }
+  } else if (!hasRain && avgHum < 65 && avgClouds < 60) {
+    results.harvesting = { status: 'go', reason: `Dry, sunny (${avgHum.toFixed(0)}% hum)`, tip: 'Excellent harvest day' }
+  } else {
+    results.harvesting = { status: 'go', reason: `Mostly dry — proceed with care`, tip: 'Check crop moisture first' }
+  }
+
+  if (heavyRain) {
+    results.fertilizing = { status: 'avoid', reason: `Heavy rain causes nutrient runoff`, tip: 'Apply after rain passes' }
+  } else if (totalRain > 1 && totalRain <= 8) {
+    results.fertilizing = { status: 'go', reason: `Light rain helps absorption`, tip: 'Apply before rain starts' }
+  } else if (maxWind > 20) {
+    results.fertilizing = { status: 'caution', reason: `Wind ${maxWind.toFixed(0)} km/h — granular scatters`, tip: 'Use liquid or wait for calm' }
+  } else if (!hasRain && avgTemp > 35) {
+    results.fertilizing = { status: 'caution', reason: `Hot & dry — burn risk`, tip: 'Irrigate before applying' }
+  } else {
+    results.fertilizing = { status: 'go', reason: `Good conditions`, tip: 'Apply early morning or evening' }
+  }
+
+  return { results, summary: { avgTemp, avgHum, avgWind, maxWind, totalRain, avgClouds } }
+}
+
+function AdaptiveFarmCalendar({ profile }) {
+  const [forecastMap, setForecastMap] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState(null)
+  const detailRef = useRef(null)
+  const calRef = useRef(null)
+
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const monthName = today.toLocaleString('default', { month: 'long' })
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDay = new Date(year, month, 1).getDay()
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
+      if (!API_KEY) { setLoading(false); return }
+      try {
+        const lat = profile?.latitude, lon = profile?.longitude
+        const params = lat && lon
+          ? `lat=${lat}&lon=${lon}`
+          : `q=${encodeURIComponent(profile?.village || profile?.district || 'Ahmedabad')},IN`
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?${params}&appid=${API_KEY}&units=metric`)
+        if (res.ok) {
+          const data = await res.json()
+          const grouped = {}
+          data.list.forEach(entry => {
+            const date = entry.dt_txt.split(' ')[0]
+            if (!grouped[date]) grouped[date] = []
+            grouped[date].push(entry)
+          })
+          const map = {}
+          Object.entries(grouped).forEach(([date, entries]) => {
+            const { results, summary } = scoreActivities(entries)
+            map[date] = { activities: results, summary }
+          })
+          setForecastMap(map)
+        }
+      } catch { /* silent */ }
+      finally { setLoading(false) }
+    }
+    fetchForecast()
+  }, [profile?.latitude, profile?.longitude, profile?.village, profile?.district])
+
+  const handleDayClick = (dateStr) => {
+    const next = selectedDate === dateStr ? null : dateStr
+    setSelectedDate(next)
+    if (next) {
+      setTimeout(() => {
+        const el = calRef.current
+        if (!el) return
+        const y = el.getBoundingClientRect().top + window.scrollY - 80
+        window.scrollTo({ top: y, behavior: 'smooth' })
+      }, 50)
+    }
+  }
+
+  const statusStyles = {
+    go: { bg: 'bg-emerald-50', border: 'border-emerald-300', badge: 'bg-emerald-100 text-emerald-700', label: 'Go' },
+    caution: { bg: 'bg-amber-50', border: 'border-amber-300', badge: 'bg-amber-100 text-amber-700', label: 'Caution' },
+    avoid: { bg: 'bg-red-50', border: 'border-red-300', badge: 'bg-red-100 text-red-700', label: 'Avoid' },
+  }
+
+  const sel = selectedDate ? forecastMap[selectedDate] : null
+
+  // Crop cycle
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
+  const stage = profile?.crop_stage ? cap(profile.crop_stage) : 'Growing'
+  const STAGE_ORDER = ['sowing', 'germination', 'vegetative', 'flowering', 'fruiting', 'harvesting']
+  const stageIdx = STAGE_ORDER.indexOf((profile?.crop_stage || 'vegetative').toLowerCase())
+  const cycleDay = stageIdx >= 0 ? stageIdx * 25 + today.getDate() % 25 : today.getDate()
+
+  return (
+    <div ref={calRef} className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+
+      {/* ── Top bar ── */}
+      <div className="px-6 pt-5 pb-1 flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-extrabold text-stone-800 tracking-tight">{monthName} {year}</h3>
+          <p className="text-[11px] text-stone-400 mt-0.5">{crop} &middot; {stage} &middot; Day {cycleDay}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-[10px] text-stone-400"><span className="w-[18px] h-[18px] rounded-full border-[1.5px] border-dashed border-red-400 inline-flex" />Risk</span>
+          <span className="flex items-center gap-1.5 text-[10px] text-stone-400"><span className="w-[18px] h-[18px] rounded-full border-[1.5px] border-dashed border-teal-400 inline-flex" />Irrigate</span>
+          <span className="flex items-center gap-1.5 text-[10px] text-stone-400"><span className="w-[18px] h-[18px] rounded-full bg-stone-800 inline-flex" />Today</span>
+        </div>
+      </div>
+
+      {/* ── Weekday row ── */}
+      <div className="grid grid-cols-7 px-8 pt-5 pb-2">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, di) => (
+          <div key={di} className="text-center text-[11px] font-bold text-stone-300 tracking-wide">{d}</div>
+        ))}
+      </div>
+
+      {/* ── Day grid ── */}
+      <div className="px-8 pb-6">
+        <div className="grid grid-cols-7 gap-y-[18px]">
+          {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+            const isToday = dateStr === todayStr
+            const isSelected = dateStr === selectedDate && !isToday
+            const df = forecastMap[dateStr]
+
+            const avoidCount = df ? FARM_ACTIVITIES.filter(a => df.activities[a.id]?.status === 'avoid').length : 0
+            const hasAlert = avoidCount > 0
+            const needsIrrigation = df && !hasAlert && df.activities.irrigation?.status === 'go'
+
+            let borderColor = 'border-red-300'
+            if (avoidCount >= 3) borderColor = 'border-red-600'
+            else if (avoidCount === 2) borderColor = 'border-red-500'
+
+            let textColor = 'text-red-400'
+            if (avoidCount >= 3) textColor = 'text-red-700'
+            else if (avoidCount === 2) textColor = 'text-red-600'
+
+            return (
+              <div key={day} className="flex flex-col items-center gap-[2px]">
+                {isToday && <span className="text-[7px] font-extrabold text-stone-500 uppercase tracking-[0.12em] leading-none">today</span>}
+                {!isToday && <span className="text-[7px] leading-none">&nbsp;</span>}
+                <div
+                  onClick={() => df && handleDayClick(dateStr)}
+                  className={`
+                    w-[38px] h-[38px] rounded-full flex items-center justify-center text-[13px] transition-all
+                    ${isToday
+                      ? 'bg-stone-800 text-white font-bold cursor-pointer shadow-lg shadow-stone-800/20'
+                      : isSelected
+                        ? 'bg-stone-100 text-stone-900 font-bold cursor-pointer ring-[2.5px] ring-stone-300'
+                        : hasAlert
+                          ? `${textColor} font-semibold cursor-pointer border-[2px] border-dashed ${borderColor}`
+                          : needsIrrigation
+                            ? 'text-teal-600 cursor-pointer border-[2px] border-dashed border-teal-300'
+                            : df
+                              ? 'text-stone-600 cursor-pointer hover:bg-stone-50 active:bg-stone-100'
+                              : 'text-stone-300'
+                    }
+                  `}
+                >
+                  {day}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Detail panel ── */}
+      {sel && selectedDate && (
+        <div ref={detailRef}>
+          {/* Divider */}
+          <div className="mx-6 border-t border-stone-100" />
+
+          {/* Date header */}
+          <div className="px-6 pt-5 pb-4 flex items-center justify-between">
+            <div>
+              <h4 className="text-[22px] font-extrabold text-stone-800 tracking-tight leading-none">
+                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                <span className="text-stone-300 font-bold mx-2">&middot;</span>
+                <span className="text-sm font-semibold text-stone-400">{stage} day {cycleDay}</span>
+              </h4>
+              <p className="text-xs text-stone-400 mt-1.5">{crop} crop cycle &middot; {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</p>
+            </div>
+            <button onClick={() => setSelectedDate(null)} className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-all shrink-0">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          {/* Weather chips */}
+          <div className="px-6 pb-4 flex gap-2 flex-wrap">
+            {[
+              { icon: '🌡️', label: `${sel.summary.avgTemp.toFixed(0)}°C` },
+              { icon: '💧', label: `${sel.summary.avgHum.toFixed(0)}%` },
+              { icon: '💨', label: `${sel.summary.avgWind.toFixed(0)} km/h` },
+              ...(sel.summary.totalRain > 0.1 ? [{ icon: '🌧️', label: `${sel.summary.totalRain.toFixed(1)}mm` }] : []),
+            ].map((c, ci) => (
+              <span key={ci} className="inline-flex items-center gap-1 text-xs text-stone-500 bg-stone-50 rounded-full px-3 py-1.5 border border-stone-100">
+                <span className="text-sm">{c.icon}</span>{c.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Activity cards */}
+          <div className="px-6 pb-6 space-y-2.5">
+            {FARM_ACTIVITIES.map(a => {
+              const act = sel.activities[a.id]
+              if (!act) return null
+              const colors = {
+                go: { card: 'bg-emerald-50/80 border-emerald-200', dot: 'bg-emerald-500', badge: 'bg-emerald-500 text-white', text: 'text-emerald-700' },
+                caution: { card: 'bg-amber-50/80 border-amber-200', dot: 'bg-amber-500', badge: 'bg-amber-500 text-white', text: 'text-amber-700' },
+                avoid: { card: 'bg-red-50/80 border-red-200', dot: 'bg-red-500', badge: 'bg-red-500 text-white', text: 'text-red-700' },
+              }
+              const c = colors[act.status]
+              return (
+                <div key={a.id} className={`rounded-2xl border ${c.card} p-4 transition-all hover:shadow-sm`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-stone-100 flex items-center justify-center text-lg shadow-sm shrink-0">
+                      {a.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-stone-800">{a.label}</p>
+                        <span className={`text-[9px] font-bold px-2 py-[3px] rounded-md ${c.badge}`}>
+                          {act.status === 'go' ? 'Safe' : act.status === 'caution' ? 'Caution' : 'Avoid'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">{act.reason}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
    OVERVIEW TAB
    ═══════════════════════════════════════════════════ */
 function OverviewTab({ session, profile, greeting }) {
@@ -213,6 +517,9 @@ function OverviewTab({ session, profile, greeting }) {
           </p>
         </div>
       </div>
+
+      {/* Adaptive Farm Calendar — weather-driven activity planner */}
+      <AdaptiveFarmCalendar profile={profile} />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
