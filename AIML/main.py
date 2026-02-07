@@ -16,6 +16,14 @@ sys.path.append(str(BASE_DIR / "scrapbot" / "src"))
 # Import the sub-applications
 # Note: We import them AFTER modifying sys.path
 from mandi_intelligence.api.main import app as mandi_app
+from mandi_intelligence.api.main import (
+    list_mandis as mandi_list_mandis,
+    get_response as mandi_get_response,
+    submit_response as mandi_submit_response,
+    health_check as mandi_health_check,
+    RecommendRequest,
+    RespondRequest,
+)
 from scrapbot.src.main import app as scrapbot_app
 
 # Create the Master App
@@ -67,6 +75,26 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/mandis")
+async def mandis_root_alias():
+    return await mandi_list_mandis()
+
+
+@app.post("/response")
+async def response_root_alias(request: dict):
+    return await mandi_get_response(RecommendRequest(**request))
+
+
+@app.post("/respond")
+async def respond_root_alias(request: dict):
+    return await mandi_submit_response(RespondRequest(**request))
+
+
+@app.get("/mandi-health")
+async def mandi_health_root_alias():
+    return await mandi_health_check()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
