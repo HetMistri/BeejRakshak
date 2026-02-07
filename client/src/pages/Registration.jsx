@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { saveRegistration } from '../lib/registration'
+import { GoogleTranslateWidget } from '../translation'
 
 const LANGUAGES = [
   { value: 'gujarati', label: 'Gujarati' },
@@ -211,13 +212,16 @@ export default function Registration({ session, onComplete, onSignOut }) {
               </div>
               <span className="font-bold text-stone-800 text-sm">BeejRakshak</span>
             </div>
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-medium transition-colors"
-            >
-              Sign out
-            </button>
+            <div className="flex items-center gap-2">
+              <GoogleTranslateWidget />
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-medium transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
 
           {/* Progress bar */}

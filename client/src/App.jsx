@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import Login from './pages/Login'
 import Registration from './pages/Registration'
 import Dashboard from './pages/Dashboard'
+import { TranslationProvider } from './translation/TranslationProvider'
 
 function App() {
   const { session, registrationComplete, loading, refresh, signOut } = useAuth()
@@ -37,46 +38,48 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* Login: only accessible when NOT logged in */}
-      <Route
-        path="/login"
-        element={
-          !session
-            ? <Login onLogin={refresh} />
-            : registrationComplete
-              ? <Navigate to="/dashboard" replace />
-              : <Navigate to="/registration" replace />
-        }
-      />
+    <TranslationProvider>
+      <Routes>
+        {/* Login: only accessible when NOT logged in */}
+        <Route
+          path="/login"
+          element={
+            !session
+              ? <Login onLogin={refresh} />
+              : registrationComplete
+                ? <Navigate to="/dashboard" replace />
+                : <Navigate to="/registration" replace />
+          }
+        />
 
-      {/* Registration: only accessible when logged in and NOT registered */}
-      <Route
-        path="/registration"
-        element={
-          !session
-            ? <Navigate to="/login" replace />
-            : registrationComplete
-              ? <Navigate to="/dashboard" replace />
-              : <Registration session={session} onComplete={refresh} onSignOut={signOut} />
-        }
-      />
+        {/* Registration: only accessible when logged in and NOT registered */}
+        <Route
+          path="/registration"
+          element={
+            !session
+              ? <Navigate to="/login" replace />
+              : registrationComplete
+                ? <Navigate to="/dashboard" replace />
+                : <Registration session={session} onComplete={refresh} onSignOut={signOut} />
+          }
+        />
 
-      {/* Dashboard: only accessible when logged in and registered */}
-      <Route
-        path="/dashboard"
-        element={
-          !session
-            ? <Navigate to="/login" replace />
-            : !registrationComplete
-              ? <Navigate to="/registration" replace />
-              : <Dashboard session={session} onSignOut={signOut} />
-        }
-      />
+        {/* Dashboard: only accessible when logged in and registered */}
+        <Route
+          path="/dashboard"
+          element={
+            !session
+              ? <Navigate to="/login" replace />
+              : !registrationComplete
+                ? <Navigate to="/registration" replace />
+                : <Dashboard session={session} onSignOut={signOut} />
+          }
+        />
 
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </TranslationProvider>
   )
 }
 

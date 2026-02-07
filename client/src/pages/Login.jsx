@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, setLocalSession } from '../lib/supabase'
+import { GoogleTranslateWidget } from '../translation'
 
 export default function Login({ onLogin }) {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -59,6 +60,9 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0a1a12]">
+      <div className="absolute top-4 right-4 z-20">
+        <GoogleTranslateWidget />
+      </div>
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-[#0a1a12] to-teal-950 pointer-events-none" />
 

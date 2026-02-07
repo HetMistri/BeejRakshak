@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { GoogleTranslateWidget } from '../translation'
 
 /* ─── SVG icon paths ─── */
 const ICONS = {
@@ -162,6 +163,8 @@ export default function Dashboard({ session, onSignOut }) {
           </button>
 
           <div className="flex-1" />
+
+          <GoogleTranslateWidget />
 
           {/* Notification bell */}
           <button className="relative p-2 rounded-lg hover:bg-stone-100 text-stone-500 transition-colors">
