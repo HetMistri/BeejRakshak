@@ -1345,7 +1345,10 @@ function MandiTab({ profile }) {
       const hRes = await fetch(`${mandiBase}/health`)
       if (!hRes.ok) throw new Error('API not reachable')
       const health = await hRes.json()
-      if (!health.models_loaded) throw new Error('ML models not loaded yet')
+      const modelsLoaded = typeof health.models_loaded === 'boolean' ? health.models_loaded : null
+      const statusOk = health.status === 'ok' || health.status === 'healthy'
+      if (modelsLoaded === false) throw new Error('ML models not loaded yet')
+      if (modelsLoaded === null && !statusOk) throw new Error('API not ready')
       setApiOnline(true)
 
       const mRes = await fetch(`${mandiBase}/mandis`)
