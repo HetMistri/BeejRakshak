@@ -7,6 +7,7 @@ Provides endpoints for price predictions (`/response`) and feedback (`/respond`)
 """
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -25,6 +26,17 @@ app = FastAPI(
     title="Mandi Intelligence API",
     description="ML-powered mandi price predictions and recommendations for farmers",
     version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://beej-rakshak.vercel.app",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global instances (loaded on startup)
