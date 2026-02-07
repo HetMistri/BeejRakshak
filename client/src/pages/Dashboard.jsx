@@ -8,6 +8,10 @@ const ICONS = {
   mandi: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z',
   satellite: 'M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z',
   advisory: 'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
+  alerts: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M13 10h-2v3H8v2h3v3h2v-3h3v-2h-3v-3z',
+  calendar: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z',
+  imageQuality: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zM10.5 8.25a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z',
+  selfTrain: 'M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5',
   signout: 'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9',
   menu: 'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5',
   chevronLeft: 'M15.75 19.5L8.25 12l7.5-7.5',
@@ -21,6 +25,10 @@ const NAV_ITEMS = [
   { id: 'mandi', label: 'Mandi Prices', icon: ICONS.mandi },
   { id: 'satellite', label: 'SAR Monitor', icon: ICONS.satellite },
   { id: 'advisory', label: 'Crop Advisory', icon: ICONS.advisory },
+  { id: 'alerts', label: 'Alert System', icon: ICONS.alerts },
+  { id: 'calendar', label: 'Adaptive Calendar', icon: ICONS.calendar },
+  { id: 'imageqc', label: 'Image QC', icon: ICONS.imageQuality },
+  { id: 'selftrain', label: 'Self Training', icon: ICONS.selfTrain },
 ]
 
 function Icon({ d, className = 'w-5 h-5' }) {
@@ -183,6 +191,10 @@ export default function Dashboard({ session, onSignOut }) {
           {activeTab === 'mandi' && <MandiTab profile={profile} />}
           {activeTab === 'satellite' && <SatelliteTab profile={profile} />}
           {activeTab === 'advisory' && <AdvisoryTab profile={profile} />}
+          {activeTab === 'alerts' && <AlertSystemTab profile={profile} />}
+          {activeTab === 'calendar' && <AdaptiveCalendarTab profile={profile} />}
+          {activeTab === 'imageqc' && <ImageQCTab profile={profile} />}
+          {activeTab === 'selftrain' && <SelfTrainingTab profile={profile} />}
         </main>
       </div>
     </div>
@@ -566,6 +578,545 @@ function AdvisoryTab({ profile }) {
             <p className="text-sm text-stone-600 ml-4">{a.text}</p>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
+   AUTONOMOUS ALERT SYSTEM TAB
+   ═══════════════════════════════════════════════════ */
+function AlertSystemTab({ profile }) {
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
+  const village = profile?.village || 'Your area'
+
+  const ALERT_RULES = [
+    { id: 1, name: 'Flood Risk Alert', trigger: 'SAR moisture > 85%', status: 'active', severity: 'critical', lastTriggered: '12 hours ago', desc: 'Triggers when soil waterlogging is detected via SAR satellite data' },
+    { id: 2, name: 'Pest Outbreak Warning', trigger: 'Humidity > 80% + Temp 25-32°C', status: 'active', severity: 'high', lastTriggered: '2 days ago', desc: 'Monitors weather conditions favorable for pest breeding' },
+    { id: 3, name: 'Frost Alert', trigger: 'Temp forecast < 4°C', status: 'active', severity: 'critical', lastTriggered: 'Never', desc: 'Early warning for frost damage risk to standing crops' },
+    { id: 4, name: 'Mandi Price Drop', trigger: `${crop} price drops > 10%`, status: 'active', severity: 'medium', lastTriggered: '5 days ago', desc: 'Alerts when market price for your crop drops significantly' },
+    { id: 5, name: 'Irrigation Needed', trigger: 'Soil moisture < 30%', status: 'paused', severity: 'medium', lastTriggered: '1 day ago', desc: 'Based on SAR soil moisture estimation for your farm coordinates' },
+    { id: 6, name: 'Optimal Harvest Window', trigger: 'NDVI plateau + weather clear', status: 'active', severity: 'low', lastTriggered: 'Never', desc: 'Identifies the best harvest window using satellite and weather data' },
+  ]
+
+  const RECENT_ALERTS = [
+    { time: '2h ago', title: 'Heavy Rainfall Warning', text: `${village}: 40mm rainfall expected in next 24h. Secure stored grain.`, severity: 'critical' },
+    { time: '8h ago', title: 'Soil Moisture High', text: `Your farm plot shows 78% soil moisture. Hold irrigation for 2 days.`, severity: 'high' },
+    { time: '1d ago', title: `${crop} Price Update`, text: `${crop} price at nearest mandi increased by ₹85/quintal.`, severity: 'low' },
+    { time: '3d ago', title: 'Growth Anomaly Detected', text: 'SAR data shows uneven growth in NW quadrant. Inspect for nutrient deficiency.', severity: 'medium' },
+  ]
+
+  const severityColors = {
+    critical: { bg: 'bg-red-50', border: 'border-red-300', dot: 'bg-red-500', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
+    high: { bg: 'bg-orange-50', border: 'border-orange-300', dot: 'bg-orange-500', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700' },
+    medium: { bg: 'bg-amber-50', border: 'border-amber-300', dot: 'bg-amber-500', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
+    low: { bg: 'bg-blue-50', border: 'border-blue-300', dot: 'bg-blue-500', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-700' },
+  }
+
+  return (
+    <div className="space-y-6 max-w-6xl animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">Autonomous Alert System</h2>
+        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          System Active
+        </span>
+      </div>
+
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-56 h-56 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-white/[0.03] rounded-full translate-y-1/2" />
+        <div className="relative z-10">
+          <p className="text-red-200 text-xs font-semibold uppercase tracking-wider">Zero-Human-Intervention</p>
+          <h3 className="text-xl font-bold mt-2">Smart Alert Engine</h3>
+          <p className="text-red-100/70 text-sm mt-2 max-w-xl">
+            Autonomous rules engine that monitors SAR satellite data, weather feeds, soil sensors, and mandi prices in real-time.
+            Alerts are triggered automatically — no manual checking needed.
+          </p>
+        </div>
+      </div>
+
+      {/* Architecture diagram */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Data Sources', value: '6', sub: 'SAR, Weather, Mandi, Soil, NDVI, Govt', color: 'from-violet-500 to-purple-600' },
+          { label: 'Active Rules', value: String(ALERT_RULES.filter(r => r.status === 'active').length), sub: 'Monitoring 24/7', color: 'from-emerald-500 to-teal-600' },
+          { label: 'Alerts Sent', value: '14', sub: 'This month', color: 'from-amber-500 to-orange-600' },
+          { label: 'Avg Response', value: '<2m', sub: 'Detection to alert', color: 'from-sky-500 to-blue-600' },
+        ].map((s, i) => (
+          <div key={i} className="rounded-2xl bg-white border border-stone-200/80 shadow-sm p-5 hover-lift">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-md`}>
+              <span className="text-white font-bold text-sm">{s.value}</span>
+            </div>
+            <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">{s.label}</p>
+            <p className="text-lg font-bold text-stone-800 mt-0.5">{s.value}</p>
+            <p className="text-xs text-stone-400">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent alerts feed */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+          <h3 className="font-bold text-stone-800">Recent Alerts</h3>
+          <span className="text-xs text-stone-400">Last 7 days</span>
+        </div>
+        <div className="divide-y divide-stone-100">
+          {RECENT_ALERTS.map((a, i) => {
+            const c = severityColors[a.severity]
+            return (
+              <div key={i} className={`px-6 py-4 ${c.bg} border-l-4 ${c.border} hover:brightness-[0.98] transition-all`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`w-2 h-2 rounded-full ${c.dot}`} />
+                  <h4 className="font-bold text-stone-800 text-sm">{a.title}</h4>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.badge} ml-auto`}>{a.severity}</span>
+                  <span className="text-[10px] text-stone-400">{a.time}</span>
+                </div>
+                <p className="text-sm text-stone-600 ml-4">{a.text}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Alert rules */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100">
+          <h3 className="font-bold text-stone-800">Alert Rules</h3>
+          <p className="text-xs text-stone-400 mt-0.5">Autonomous rules that run continuously on your farm data</p>
+        </div>
+        <div className="divide-y divide-stone-100">
+          {ALERT_RULES.map((rule) => {
+            const c = severityColors[rule.severity]
+            return (
+              <div key={rule.id} className="px-6 py-4 flex items-center gap-4 hover:bg-stone-50 transition-colors">
+                <div className={`w-3 h-3 rounded-full ${c.dot} shrink-0`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-stone-800 text-sm">{rule.name}</p>
+                    {rule.status === 'paused' && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">Paused</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-400 mt-0.5">{rule.desc}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-stone-400 font-mono">{rule.trigger}</p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">Last: {rule.lastTriggered}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
+   ADAPTIVE CALENDAR TAB
+   ═══════════════════════════════════════════════════ */
+function AdaptiveCalendarTab({ profile }) {
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Wheat'
+  const stage = profile?.crop_stage ? cap(profile.crop_stage) : 'Vegetative'
+
+  const today = new Date()
+  const monthName = today.toLocaleString('default', { month: 'long' })
+  const year = today.getFullYear()
+  const daysInMonth = new Date(year, today.getMonth() + 1, 0).getDate()
+  const firstDay = new Date(year, today.getMonth(), 1).getDay()
+
+  // Generate calendar events (mock but contextual)
+  const events = {
+    [today.getDate()]: { type: 'today', label: 'Today' },
+    [today.getDate() + 2]: { type: 'irrigation', label: 'Irrigation', color: 'bg-blue-500' },
+    [today.getDate() + 4]: { type: 'fertilizer', label: 'Fertilizer', color: 'bg-emerald-500' },
+    [today.getDate() + 7]: { type: 'pest', label: 'Pest Spray', color: 'bg-amber-500' },
+    [today.getDate() + 12]: { type: 'harvest', label: 'Harvest Check', color: 'bg-orange-500' },
+    [today.getDate() + 15]: { type: 'mandi', label: 'Mandi Visit', color: 'bg-purple-500' },
+  }
+
+  const UPCOMING = [
+    { date: `${monthName} ${today.getDate() + 2}`, title: 'Scheduled Irrigation', desc: 'SAR data shows soil moisture dropping to 32%. Irrigate before it reaches critical 25% threshold.', icon: '💧', color: 'border-blue-300 bg-blue-50' },
+    { date: `${monthName} ${today.getDate() + 4}`, title: 'Nitrogen Application', desc: `${crop} in ${stage} stage needs nitrogen boost. Weather window is clear for next 3 days.`, icon: '🧪', color: 'border-emerald-300 bg-emerald-50' },
+    { date: `${monthName} ${today.getDate() + 7}`, title: 'Preventive Pest Spray', desc: 'Humidity forecast 82% this week. Apply preventive spray to avoid fungal infection.', icon: '🛡️', color: 'border-amber-300 bg-amber-50' },
+    { date: `${monthName} ${today.getDate() + 12}`, title: 'Pre-Harvest Assessment', desc: 'NDVI plateau detected. Conduct field inspection to confirm harvest readiness.', icon: '🌾', color: 'border-orange-300 bg-orange-50' },
+    { date: `${monthName} ${today.getDate() + 15}`, title: 'Mandi Price Window', desc: `${crop} prices trending up. Optimal selling window projected for this period.`, icon: '📊', color: 'border-purple-300 bg-purple-50' },
+  ]
+
+  const SEASONS = [
+    { name: 'Kharif', months: 'Jun - Oct', crops: 'Rice, Cotton, Soybean', active: today.getMonth() >= 5 && today.getMonth() <= 9 },
+    { name: 'Rabi', months: 'Nov - Mar', crops: 'Wheat, Mustard, Gram', active: today.getMonth() >= 10 || today.getMonth() <= 2 },
+    { name: 'Zaid', months: 'Mar - Jun', crops: 'Watermelon, Cucumber', active: today.getMonth() >= 2 && today.getMonth() <= 5 },
+  ]
+
+  return (
+    <div className="space-y-6 max-w-6xl animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">Adaptive Calendar</h2>
+        <span className="text-xs text-stone-400">{crop} &middot; {stage} stage</span>
+      </div>
+
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="relative z-10">
+          <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">AI-Powered Scheduling</p>
+          <h3 className="text-xl font-bold mt-2">Farm calendar that adapts to your crop, weather, and satellite data</h3>
+          <p className="text-indigo-100/70 text-sm mt-2 max-w-xl">
+            Every task is auto-scheduled based on real-time SAR moisture data, weather forecasts, crop growth stage, and market trends.
+            The calendar updates itself — you just follow it.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Calendar grid */}
+        <div className="lg:col-span-3 rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+            <h3 className="font-bold text-stone-800">{monthName} {year}</h3>
+            <div className="flex gap-1">
+              {[
+                { label: 'Irrigation', color: 'bg-blue-500' },
+                { label: 'Fertilizer', color: 'bg-emerald-500' },
+                { label: 'Pest', color: 'bg-amber-500' },
+                { label: 'Harvest', color: 'bg-orange-500' },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-1 text-[9px] text-stone-400 px-1.5">
+                  <span className={`w-2 h-2 rounded-full ${l.color}`} />{l.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-4">
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="text-center text-[10px] font-semibold text-stone-400 uppercase py-1">{d}</div>
+              ))}
+            </div>
+            {/* Days */}
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const ev = events[day]
+                const isToday = day === today.getDate()
+                return (
+                  <div
+                    key={day}
+                    className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-all ${
+                      isToday
+                        ? 'bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/30'
+                        : ev
+                          ? 'bg-stone-50 font-medium hover:bg-stone-100'
+                          : 'text-stone-600 hover:bg-stone-50'
+                    }`}
+                  >
+                    {day}
+                    {ev && !isToday && (
+                      <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${ev.color || 'bg-emerald-500'}`} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Season timeline */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm p-5">
+            <h4 className="font-bold text-stone-800 text-sm mb-3">Crop Seasons</h4>
+            <div className="space-y-3">
+              {SEASONS.map((s, i) => (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${s.active ? 'border-emerald-300 bg-emerald-50' : 'border-stone-200 bg-stone-50'}`}>
+                  <div className={`w-3 h-3 rounded-full ${s.active ? 'bg-emerald-500 animate-pulse' : 'bg-stone-300'}`} />
+                  <div>
+                    <p className="text-sm font-bold text-stone-800">{s.name} <span className="font-normal text-stone-400">({s.months})</span></p>
+                    <p className="text-xs text-stone-500">{s.crops}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 p-5">
+            <h4 className="font-bold text-stone-800 text-sm">How it adapts</h4>
+            <ul className="mt-2 space-y-2 text-xs text-stone-600">
+              <li className="flex gap-2"><span className="text-indigo-500 font-bold">1.</span>Reads SAR moisture + NDVI daily</li>
+              <li className="flex gap-2"><span className="text-indigo-500 font-bold">2.</span>Checks 7-day weather forecast</li>
+              <li className="flex gap-2"><span className="text-indigo-500 font-bold">3.</span>Matches crop stage requirements</li>
+              <li className="flex gap-2"><span className="text-indigo-500 font-bold">4.</span>Reschedules tasks automatically</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Upcoming tasks */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100">
+          <h3 className="font-bold text-stone-800">Upcoming Farm Tasks</h3>
+          <p className="text-xs text-stone-400 mt-0.5">Auto-generated based on your crop, weather, and satellite data</p>
+        </div>
+        <div className="divide-y divide-stone-100">
+          {UPCOMING.map((t, i) => (
+            <div key={i} className={`px-6 py-4 border-l-4 ${t.color} hover:brightness-[0.98] transition-all`}>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="text-xl">{t.icon}</span>
+                <div>
+                  <p className="font-bold text-stone-800 text-sm">{t.title}</p>
+                  <p className="text-[10px] text-stone-400">{t.date}</p>
+                </div>
+              </div>
+              <p className="text-sm text-stone-600 ml-9">{t.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
+   IMAGE-BASED QUALITY ESTIMATION TAB
+   ═══════════════════════════════════════════════════ */
+function ImageQCTab({ profile }) {
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
+
+  const QUALITY_PARAMS = [
+    { name: 'Grain Size', score: 88, grade: 'A', desc: 'Above average grain size detected', color: 'emerald' },
+    { name: 'Color Consistency', score: 74, grade: 'B+', desc: 'Slight color variation in 12% of samples', color: 'teal' },
+    { name: 'Moisture Content', score: 91, grade: 'A+', desc: 'Optimal moisture level for storage', color: 'blue' },
+    { name: 'Foreign Matter', score: 95, grade: 'A+', desc: 'Minimal foreign particles detected', color: 'emerald' },
+    { name: 'Damage Index', score: 82, grade: 'A', desc: '4% pest damage, 2% mechanical damage', color: 'amber' },
+    { name: 'Overall Grade', score: 86, grade: 'A', desc: 'Premium quality — eligible for higher mandi rate', color: 'emerald' },
+  ]
+
+  const HISTORY = [
+    { date: 'Feb 5, 2026', crop: crop, grade: 'A', score: 86, status: 'Premium' },
+    { date: 'Jan 20, 2026', crop: crop, grade: 'B+', score: 78, status: 'Standard' },
+    { date: 'Jan 8, 2026', crop: crop, grade: 'A', score: 84, status: 'Premium' },
+  ]
+
+  return (
+    <div className="space-y-6 max-w-6xl animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">Image-Based Quality Estimation</h2>
+        <span className="px-3 py-1.5 bg-violet-50 text-violet-700 text-xs font-semibold rounded-full border border-violet-200">AI Vision</span>
+      </div>
+
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/[0.04] rounded-full translate-y-1/3" />
+        <div className="relative z-10">
+          <p className="text-violet-200 text-xs font-semibold uppercase tracking-wider">Computer Vision + ML</p>
+          <h3 className="text-xl font-bold mt-2">Snap a photo. Get instant quality grade.</h3>
+          <p className="text-violet-100/70 text-sm mt-2 max-w-xl">
+            Our on-device ML model analyses grain images for size, color, moisture, damage, and foreign matter.
+            Get a mandi-ready quality certificate in seconds — no lab needed.
+          </p>
+        </div>
+      </div>
+
+      {/* Upload area */}
+      <div className="rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50/50 p-8 text-center hover:border-violet-400 hover:bg-violet-50 transition-all cursor-pointer">
+        <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-4">
+          <Icon d={ICONS.imageQuality} className="w-8 h-8 text-violet-500" />
+        </div>
+        <p className="font-bold text-stone-800">Upload crop image for analysis</p>
+        <p className="text-sm text-stone-500 mt-1">Take a photo of your grain sample or upload from gallery</p>
+        <div className="mt-4 flex justify-center gap-3">
+          <span className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-bold shadow-lg shadow-violet-500/25">
+            Take Photo
+          </span>
+          <span className="px-4 py-2.5 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-bold">
+            Upload Image
+          </span>
+        </div>
+      </div>
+
+      {/* Latest analysis */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+          <h3 className="font-bold text-stone-800">Latest Analysis — {crop}</h3>
+          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">Grade A</span>
+        </div>
+        <div className="p-6 space-y-4">
+          {QUALITY_PARAMS.map((p, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between text-sm mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-stone-700">{p.name}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    p.grade.startsWith('A') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  }`}>{p.grade}</span>
+                </div>
+                <span className="font-bold text-stone-800">{p.score}%</span>
+              </div>
+              <GaugeBar label="" value={p.score} max={100} color={p.color} unit="" />
+              <p className="text-xs text-stone-400 mt-1">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* History */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100">
+          <h3 className="font-bold text-stone-800">Analysis History</h3>
+        </div>
+        <div className="divide-y divide-stone-100">
+          {HISTORY.map((h, i) => (
+            <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
+              <div>
+                <p className="font-semibold text-stone-800 text-sm">{h.crop}</p>
+                <p className="text-xs text-stone-400">{h.date}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-stone-700">{h.score}%</span>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  h.status === 'Premium' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                }`}>{h.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
+   SELF TRAINING TAB
+   ═══════════════════════════════════════════════════ */
+function SelfTrainingTab({ profile }) {
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
+
+  const MODULES = [
+    {
+      id: 1, title: 'Understanding SAR Satellite Data', level: 'Beginner', duration: '8 min',
+      desc: 'Learn how Synthetic Aperture Radar works, what soil moisture maps mean, and how to use satellite data for irrigation decisions.',
+      lessons: 4, completed: 3, color: 'from-teal-500 to-emerald-600', icon: '🛰️',
+    },
+    {
+      id: 2, title: `Best Practices for ${crop} Cultivation`, level: 'Intermediate', duration: '12 min',
+      desc: `Stage-wise guide for ${crop}: soil preparation, sowing techniques, water management, and harvest timing based on NDVI data.`,
+      lessons: 6, completed: 2, color: 'from-amber-500 to-orange-600', icon: '🌾',
+    },
+    {
+      id: 3, title: 'Reading Mandi Price Trends', level: 'Beginner', duration: '6 min',
+      desc: 'How to interpret price charts, identify best selling windows, and use price alerts to maximize your income.',
+      lessons: 3, completed: 3, color: 'from-purple-500 to-violet-600', icon: '📈',
+    },
+    {
+      id: 4, title: 'Pest & Disease Identification', level: 'Intermediate', duration: '10 min',
+      desc: 'Visual guide to common pests and diseases. Learn to spot early signs and take preventive action before crop damage spreads.',
+      lessons: 5, completed: 1, color: 'from-red-500 to-rose-600', icon: '🔬',
+    },
+    {
+      id: 5, title: 'Government Schemes & Subsidies', level: 'Beginner', duration: '5 min',
+      desc: 'Navigate PM-KISAN, crop insurance, MSP schemes, and subsidy applications. Step-by-step with Aadhaar linkage.',
+      lessons: 3, completed: 0, color: 'from-blue-500 to-indigo-600', icon: '🏛️',
+    },
+    {
+      id: 6, title: 'Image-Based Crop Grading', level: 'Advanced', duration: '15 min',
+      desc: 'Master the art of grain quality assessment. Learn what makes Grade A vs Grade B, and how to prepare samples for mandi certification.',
+      lessons: 4, completed: 0, color: 'from-fuchsia-500 to-pink-600', icon: '📸',
+    },
+  ]
+
+  const totalLessons = MODULES.reduce((s, m) => s + m.lessons, 0)
+  const completedLessons = MODULES.reduce((s, m) => s + m.completed, 0)
+  const overallProgress = Math.round((completedLessons / totalLessons) * 100)
+
+  return (
+    <div className="space-y-6 max-w-6xl animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">Self Training</h2>
+        <span className="text-xs text-stone-400">{completedLessons}/{totalLessons} lessons completed</span>
+      </div>
+
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-700 p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-white/[0.03] rounded-full translate-y-1/2" />
+        <div className="relative z-10">
+          <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Learn at your own pace</p>
+          <h3 className="text-xl font-bold mt-2">Knowledge is the best seed</h3>
+          <p className="text-emerald-100/70 text-sm mt-2 max-w-xl">
+            Bite-sized, practical modules designed for farmers. Available in your preferred language.
+            Learn about satellite data, crop management, market strategies, and government schemes.
+          </p>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex-1 max-w-xs">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-emerald-200">Overall Progress</span>
+                <span className="font-bold">{overallProgress}%</span>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full">
+                <div className="h-full bg-white rounded-full transition-all duration-700" style={{ width: `${overallProgress}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MiniCard title="Modules" value={String(MODULES.length)} sub="Available courses" accent="sky" />
+        <MiniCard title="Completed" value={String(MODULES.filter(m => m.completed === m.lessons).length)} sub={`of ${MODULES.length} modules`} accent="blue" />
+        <MiniCard title="Lessons Done" value={String(completedLessons)} sub={`of ${totalLessons} total`} accent="amber" />
+        <MiniCard title="Avg Duration" value="9 min" sub="Per module" accent="sky" />
+      </div>
+
+      {/* Modules grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {MODULES.map((m) => {
+          const pct = Math.round((m.completed / m.lessons) * 100)
+          const done = m.completed === m.lessons
+          return (
+            <div key={m.id} className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden hover-lift group cursor-pointer">
+              <div className={`h-2 bg-gradient-to-r ${m.color}`} />
+              <div className="p-5">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">{m.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-stone-800 text-sm leading-snug">{m.title}</h4>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">{m.level}</span>
+                      <span className="text-[10px] text-stone-400">{m.duration}</span>
+                      <span className="text-[10px] text-stone-400">{m.lessons} lessons</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-stone-500 mt-3 leading-relaxed">{m.desc}</p>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-[10px] mb-1">
+                    <span className="text-stone-400">{m.completed}/{m.lessons} lessons</span>
+                    <span className="font-bold text-stone-600">{pct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-stone-100 rounded-full">
+                    <div className={`h-full rounded-full bg-gradient-to-r ${m.color} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                    done
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-stone-100 text-stone-600 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md'
+                  }`}>
+                    {done ? 'Completed' : m.completed > 0 ? 'Continue' : 'Start'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
