@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 /* ─── SVG icon paths ─── */
@@ -338,62 +338,683 @@ function OverviewTab({ session, profile, greeting }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   WEATHER TAB
+   FARMCAST — REAL-TIME AGRICULTURAL WEATHER INTELLIGENCE
    ═══════════════════════════════════════════════════ */
+
+/* ── Crop-specific heat/cold thresholds (°C) ── */
+const CROP_HEAT_THRESHOLDS = {
+  wheat: { optimal: [15, 25], stress: 35 },
+  rice: { optimal: [25, 35], stress: 40 },
+  cotton: { optimal: [20, 30], stress: 38 },
+  soybean: { optimal: [20, 30], stress: 35 },
+  maize: { optimal: [18, 27], stress: 35 },
+  mustard: { optimal: [15, 25], stress: 35 },
+  gram: { optimal: [15, 25], stress: 35 },
+  sugarcane: { optimal: [20, 35], stress: 42 },
+  groundnut: { optimal: [22, 30], stress: 38 },
+}
+
+/* ── Agricultural computation engine ── */
+
+function computeSprayScore(current, forecastList) {
+  if (!current || !forecastList?.length) return { score: 0, label: 'No data', factors: [] }
+  const windKmh = (current.wind?.speed || 0) * 3.6
+  const humidity = current.main?.humidity || 0
+  const factors = []
+
+  const windScore = windKmh < 8 ? 100 : windKmh < 15 ? 70 : windKmh < 25 ? 30 : 0
+  factors.push({ name: 'Wind Speed', value: `${windKmh.toFixed(1)} km/h`, ok: windKmh < 15 })
+
+  const next4h = forecastList.slice(0, 2)
+  const rainExpected = next4h.some(f => (f.pop || 0) > 0.3 || (f.rain?.['3h'] || 0) > 0)
+  factors.push({ name: 'Rain (next 4h)', value: rainExpected ? 'Expected' : 'Clear', ok: !rainExpected })
+
+  const humScore = humidity < 70 ? 100 : humidity < 85 ? 60 : 20
+  factors.push({ name: 'Humidity', value: `${humidity}%`, ok: humidity < 85 })
+
+  const score = Math.round(windScore * 0.4 + (rainExpected ? 0 : 100) * 0.35 + humScore * 0.25)
+  const label = score >= 70 ? 'Safe to Spray' : score >= 40 ? 'Use Caution' : 'Do Not Spray'
+  return { score, label, factors }
+}
+
+function computeDiseasePressure(current) {
+  if (!current) return { score: 0, label: 'No data', detail: '' }
+  const temp = current.main?.temp || 0
+  const humidity = current.main?.humidity || 0
+  const dewPoint = temp - ((100 - humidity) / 5)
+  const leafWetness = Math.max(0, 100 - (temp - dewPoint) * 10)
+
+  let score = 0
+  if (humidity > 90) score += 40
+  else if (humidity > 80) score += 30
+  else if (humidity > 70) score += 15
+
+  if (temp >= 20 && temp <= 30) score += 35
+  else if (temp >= 15 && temp <= 35) score += 20
+  else score += 5
+
+  score += Math.round(leafWetness * 0.25)
+  score = Math.min(100, score)
+
+  const label = score >= 70 ? 'High Risk' : score >= 40 ? 'Moderate' : 'Low Risk'
+  const detail = score >= 70
+    ? 'Fungal infection likely. Apply preventive fungicide immediately.'
+    : score >= 40
+    ? 'Conditions favor disease. Monitor crops closely for symptoms.'
+    : 'Disease pressure is low. Conditions unfavorable for pathogens.'
+  return { score, label, detail }
+}
+
+function computeHeatStress(current, cropName) {
+  if (!current) return { score: 0, label: 'No data', detail: '' }
+  const temp = current.main?.temp || 0
+  const crop = CROP_HEAT_THRESHOLDS[cropName?.toLowerCase()] || { optimal: [20, 30], stress: 35 }
+  const cropLabel = cap(cropName || 'crop')
+
+  let score = 0
+  if (temp > crop.stress) score = Math.min(100, 70 + (temp - crop.stress) * 6)
+  else if (temp > crop.optimal[1]) score = Math.round(((temp - crop.optimal[1]) / (crop.stress - crop.optimal[1])) * 70)
+  else if (temp < crop.optimal[0] - 5) score = Math.min(80, (crop.optimal[0] - 5 - temp) * 8)
+  else if (temp < crop.optimal[0]) score = Math.round(((crop.optimal[0] - temp) / 5) * 25)
+
+  const label = score >= 70 ? 'Severe' : score >= 40 ? 'Moderate' : 'Normal'
+  const detail = temp > crop.stress
+    ? `${temp.toFixed(1)}°C exceeds ${cropLabel} tolerance (${crop.stress}°C). Yield loss risk.`
+    : temp > crop.optimal[1]
+    ? `Above optimal range (${crop.optimal[0]}–${crop.optimal[1]}°C) for ${cropLabel}.`
+    : temp < crop.optimal[0]
+    ? `Below optimal range (${crop.optimal[0]}–${crop.optimal[1]}°C) for ${cropLabel}.`
+    : `${temp.toFixed(1)}°C is within optimal range for ${cropLabel} growth.`
+  return { score, label, detail }
+}
+
+function computeFrostRisk(current) {
+  if (!current) return { score: 0, label: 'None', detail: '' }
+  const temp = current.main?.temp || 20
+  const humidity = current.main?.humidity || 50
+  const clouds = current.clouds?.all || 0
+  const windSpeed = (current.wind?.speed || 0) * 3.6
+
+  let score = 0
+  if (temp <= 0) score += 50
+  else if (temp <= 4) score += 40
+  else if (temp <= 8) score += 20
+  else if (temp <= 12) score += 5
+
+  if (clouds < 20) score += 25
+  else if (clouds < 50) score += 15
+  else score += 5
+
+  if (windSpeed < 5) score += 15
+  else if (windSpeed < 10) score += 8
+
+  const dewPoint = temp - ((100 - humidity) / 5)
+  if (dewPoint < 0) score += 10
+
+  score = Math.min(100, score)
+  const label = score >= 60 ? 'High Risk' : score >= 30 ? 'Moderate' : 'Low'
+  const detail = score >= 60
+    ? 'Frost likely. Cover sensitive crops and seedlings tonight.'
+    : score >= 30
+    ? 'Some frost risk. Monitor overnight temperatures carefully.'
+    : 'Frost risk is minimal. No protection needed.'
+  return { score, label, detail }
+}
+
+function computeET0(forecastList) {
+  if (!forecastList?.length) return { value: 0, label: 'No data', detail: '' }
+  const todayStr = new Date().toDateString()
+  let temps = forecastList.filter(f => new Date(f.dt * 1000).toDateString() === todayStr).map(f => f.main.temp)
+  if (temps.length < 2) temps = forecastList.slice(0, 4).map(f => f.main.temp)
+
+  const tMax = Math.max(...temps)
+  const tMin = Math.min(...temps)
+  const tMean = (tMax + tMin) / 2
+  const Ra = 15 // extraterrestrial radiation MJ/m²/day (tropical approx)
+  const et0 = 0.0023 * (tMean + 17.8) * Math.sqrt(Math.max(0.1, tMax - tMin)) * Ra
+  const value = Math.max(0, parseFloat(et0.toFixed(1)))
+
+  const label = value > 6 ? 'Very High' : value > 4 ? 'High' : value > 2 ? 'Moderate' : 'Low'
+  const detail = `Estimated ${value}mm water loss/day. ${value > 4 ? 'Increase irrigation frequency.' : 'Moisture loss is manageable.'}`
+  return { value, label, detail }
+}
+
+function getGoldenHourData(forecastList) {
+  if (!forecastList?.length) return []
+  return forecastList.slice(0, 8).map(f => {
+    const time = new Date(f.dt * 1000)
+    const temp = f.main.temp
+    const windKmh = (f.wind?.speed || 0) * 3.6
+    const humidity = f.main.humidity
+    const hasRain = (f.pop || 0) > 0.3 || (f.rain?.['3h'] || 0) > 0
+    let activity, suitability
+
+    if (hasRain) { activity = 'Rain expected'; suitability = 'bad' }
+    else if (windKmh > 20) { activity = 'Too windy for spraying'; suitability = 'caution' }
+    else if (temp > 38) { activity = 'Extreme heat — avoid field'; suitability = 'bad' }
+    else if (windKmh < 10 && humidity < 80) { activity = 'Ideal for spraying'; suitability = 'good' }
+    else if (temp >= 18 && temp <= 33) { activity = 'Good for field work'; suitability = 'good' }
+    else if (temp < 8) { activity = 'Too cold for field work'; suitability = 'caution' }
+    else { activity = 'Moderate conditions'; suitability = 'caution' }
+
+    return {
+      time, temp: Math.round(temp), windKmh: windKmh.toFixed(0),
+      humidity, hasRain, icon: f.weather?.[0]?.icon,
+      desc: f.weather?.[0]?.description, activity, suitability,
+      pop: Math.round((f.pop || 0) * 100),
+    }
+  })
+}
+
+function getAirQualityImpact(airData) {
+  if (!airData?.list?.[0]) return null
+  const { components, main } = airData.list[0]
+  const pm25 = components.pm2_5 || 0
+  const pm10 = components.pm10 || 0
+  const o3 = components.o3 || 0
+
+  const photoImpact = pm25 > 100 ? 'Severe' : pm25 > 50 ? 'Moderate' : pm25 > 25 ? 'Mild' : 'Minimal'
+  const photoScore = Math.min(100, Math.round(pm25 * 0.7))
+  const ozoneRisk = o3 > 120 ? 'High' : o3 > 80 ? 'Moderate' : 'Low'
+
+  const aqiLabels = ['', 'Good', 'Fair', 'Moderate', 'Poor', 'Very Poor']
+  const aqiColors = ['', 'emerald', 'teal', 'amber', 'orange', 'red']
+
+  return {
+    aqi: main.aqi, aqiLabel: aqiLabels[main.aqi] || 'Unknown',
+    aqiColor: aqiColors[main.aqi] || 'stone',
+    pm25: pm25.toFixed(1), pm10: pm10.toFixed(1), o3: o3.toFixed(1),
+    photoImpact, photoScore, ozoneRisk,
+    detail: pm25 > 100
+      ? 'Heavy particulate matter blocking sunlight. Crop photosynthesis significantly reduced.'
+      : pm25 > 50
+      ? 'Moderate air pollution may reduce crop growth over extended exposure.'
+      : 'Air quality is acceptable for healthy crop development.',
+  }
+}
+
+function get5DayAgricast(forecastList) {
+  if (!forecastList?.length) return []
+  const days = {}
+  forecastList.forEach(f => {
+    const key = new Date(f.dt * 1000).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })
+    if (!days[key]) days[key] = { temps: [], humidity: [], wind: [], rain: 0, pop: [], icons: [] }
+    const d = days[key]
+    d.temps.push(f.main.temp)
+    d.humidity.push(f.main.humidity)
+    d.wind.push((f.wind?.speed || 0) * 3.6)
+    d.rain += (f.rain?.['3h'] || 0)
+    d.pop.push(f.pop || 0)
+    d.icons.push(f.weather?.[0]?.icon)
+  })
+
+  return Object.entries(days).slice(0, 5).map(([date, d]) => {
+    const maxTemp = Math.round(Math.max(...d.temps))
+    const minTemp = Math.round(Math.min(...d.temps))
+    const avgHumidity = Math.round(d.humidity.reduce((a, b) => a + b, 0) / d.humidity.length)
+    const maxWind = Math.round(Math.max(...d.wind))
+    const totalRain = d.rain
+    const maxPop = Math.round(Math.max(...d.pop) * 100)
+    const iconCounts = {}
+    d.icons.forEach(ic => { iconCounts[ic] = (iconCounts[ic] || 0) + 1 })
+    const mainIcon = Object.entries(iconCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+
+    let advice, adviceType = 'info'
+    if (totalRain > 10) { advice = 'Heavy rain expected. Secure stored grain. Do not apply pesticides.'; adviceType = 'danger' }
+    else if (totalRain > 2) { advice = 'Light rain likely. Good for soil moisture, but avoid pesticide application.'; adviceType = 'warning' }
+    else if (maxWind > 20) { advice = 'Strong winds expected. Not suitable for spraying or transplanting.'; adviceType = 'warning' }
+    else if (maxTemp > 40) { advice = 'Extreme heat. Irrigate early morning. Avoid midday fieldwork.'; adviceType = 'danger' }
+    else if (maxWind < 12 && totalRain < 1 && maxTemp < 36) { advice = 'Excellent conditions for spraying, harvesting, and field work.'; adviceType = 'good' }
+    else { advice = 'Moderate conditions. Suitable for most farming activities.'; adviceType = 'info' }
+
+    return { date, maxTemp, minTemp, avgHumidity, maxWind, totalRain: totalRain.toFixed(1), maxPop, mainIcon, advice, adviceType }
+  })
+}
+
+/* ── Risk gauge color helpers ── */
+const RISK_FILLS = { emerald: 'from-emerald-400 to-emerald-600', amber: 'from-amber-400 to-amber-600', red: 'from-red-400 to-red-600' }
+const RISK_BGS = { emerald: 'bg-emerald-100', amber: 'bg-amber-100', red: 'bg-red-100' }
+const RISK_BADGES = { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700' }
+
+function riskColor(score, inverted) {
+  const s = inverted ? 100 - score : score
+  if (s >= 70) return 'red'
+  if (s >= 40) return 'amber'
+  return 'emerald'
+}
+
+/* ── Main WeatherTab (FarmCast) Component ── */
 function WeatherTab({ profile }) {
-  const days = ['Today', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const temps = [32, 30, 28, 31, 33, 29, 27]
-  const icons = ['☀️', '⛅', '🌧️', '⛅', '☀️', '🌧️', '⛅']
+  const [weather, setWeather] = useState(null)
+  const [forecast, setForecast] = useState(null)
+  const [airQuality, setAirQuality] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const timerRef = useRef(null)
+
+  const fetchAll = useCallback(async () => {
+    const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
+    if (!API_KEY) { setError('Weather API key not configured'); setLoading(false); return }
+    try {
+      const lat = profile?.latitude, lon = profile?.longitude
+      const params = lat && lon
+        ? `lat=${lat}&lon=${lon}`
+        : `q=${encodeURIComponent(profile?.village || profile?.district || 'Ahmedabad')},IN`
+
+      const [cRes, fRes] = await Promise.all([
+        fetch(`https://api.openweathermap.org/data/2.5/weather?${params}&appid=${API_KEY}&units=metric`),
+        fetch(`https://api.openweathermap.org/data/2.5/forecast?${params}&appid=${API_KEY}&units=metric`),
+      ])
+      if (!cRes.ok || !fRes.ok) throw new Error('Weather API request failed')
+      const cData = await cRes.json()
+      const fData = await fRes.json()
+      setWeather(cData)
+      setForecast(fData)
+
+      // Air quality requires lat/lon — use coords from current weather response
+      const aLat = cData.coord?.lat, aLon = cData.coord?.lon
+      if (aLat != null && aLon != null) {
+        const aRes = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${aLat}&lon=${aLon}&appid=${API_KEY}`)
+        if (aRes.ok) setAirQuality(await aRes.json())
+      }
+      setLastUpdated(new Date())
+      setError(null)
+    } catch (e) {
+      setError(e.message || 'Failed to fetch weather data')
+    } finally {
+      setLoading(false)
+    }
+  }, [profile?.latitude, profile?.longitude, profile?.village, profile?.district])
+
+  useEffect(() => {
+    fetchAll()
+    timerRef.current = setInterval(fetchAll, 60000)
+    return () => clearInterval(timerRef.current)
+  }, [fetchAll])
+
+  /* Compute agricultural intelligence */
+  const cropName = profile?.primary_crop || ''
+  const spray = computeSprayScore(weather, forecast?.list)
+  const disease = computeDiseasePressure(weather)
+  const heat = computeHeatStress(weather, cropName)
+  const frost = computeFrostRisk(weather)
+  const et0 = computeET0(forecast?.list)
+  const goldenHours = getGoldenHourData(forecast?.list)
+  const airImpact = getAirQualityImpact(airQuality)
+  const agricast = get5DayAgricast(forecast?.list)
+
+  const windDeg = weather?.wind?.deg || 0
+  const DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
+  const windDir = DIRS[Math.round(windDeg / 22.5) % 16]
+
+  /* ── Loading state ── */
+  if (loading) return (
+    <div className="flex items-center justify-center py-32 animate-fade-in">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-stone-600 font-semibold">Loading FarmCast Intelligence...</p>
+        <p className="text-stone-400 text-sm mt-1">Fetching real-time weather data for your farm</p>
+      </div>
+    </div>
+  )
+
+  /* ── Error state (only if no cached data) ── */
+  if (error && !weather) return (
+    <div className="max-w-6xl animate-fade-in">
+      <div className="rounded-2xl bg-red-50 border border-red-200 p-8 text-center">
+        <p className="text-red-700 font-bold text-lg">Weather Data Unavailable</p>
+        <p className="text-red-500 text-sm mt-2">{error}</p>
+        <button
+          onClick={() => { setLoading(true); fetchAll() }}
+          className="mt-4 px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6 max-w-6xl animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-800">Weather Intelligence</h2>
-        <span className="text-xs text-stone-400">{profile?.village || 'Your location'}</span>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-stone-800">FarmCast</h2>
+          <p className="text-xs text-stone-400">Real-Time Agricultural Weather Intelligence</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full">
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-xs font-bold text-red-600">LIVE</span>
+          </span>
+          {lastUpdated && (
+            <span className="text-[10px] text-stone-400">Updated {lastUpdated.toLocaleTimeString()}</span>
+          )}
+        </div>
       </div>
 
-      {/* Current weather */}
+      {/* ── Current Weather Hero ── */}
       <div className="rounded-2xl bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 p-6 md:p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/4 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/4 -translate-x-1/4" />
-        <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-sky-200 text-sm font-medium">Current Weather</p>
-            <div className="flex items-end gap-3 mt-2">
-              <span className="text-6xl font-extrabold">32°</span>
-              <span className="text-xl text-sky-200 mb-2">C</span>
+        <div className="relative z-10">
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sky-200 text-sm font-medium">{weather?.name || profile?.village || 'Your Location'}</span>
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="text-7xl font-extrabold tracking-tighter">{Math.round(weather?.main?.temp ?? 0)}°</span>
+                <span className="text-2xl text-sky-200 mb-3">C</span>
+              </div>
+              <p className="text-sky-100 capitalize text-lg">{weather?.weather?.[0]?.description || ''}</p>
+              <p className="text-sky-200/70 text-sm">Feels like {Math.round(weather?.main?.feels_like ?? 0)}°C</p>
             </div>
-            <p className="text-sky-100 mt-1">Partly cloudy, humidity 65%</p>
+            <div className="text-right">
+              {weather?.weather?.[0]?.icon && (
+                <img
+                  src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@4x.png`}
+                  alt={weather.weather[0].description}
+                  className="w-32 h-32 -mt-4 -mr-2 drop-shadow-2xl"
+                />
+              )}
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-7xl">⛅</span>
-            <p className="text-sky-200 text-sm mt-2">Wind: 12 km/h NE</p>
+
+          {/* Weather detail grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 mt-6 pt-5 border-t border-white/20">
+            {[
+              ['Humidity', `${weather?.main?.humidity ?? 0}%`],
+              ['Wind', `${((weather?.wind?.speed || 0) * 3.6).toFixed(1)} km/h ${windDir}`],
+              ['Pressure', `${weather?.main?.pressure ?? 0} hPa`],
+              ['Visibility', `${((weather?.visibility ?? 10000) / 1000).toFixed(1)} km`],
+              ['Clouds', `${weather?.clouds?.all ?? 0}%`],
+              ['Dew Point', `${((weather?.main?.temp ?? 0) - ((100 - (weather?.main?.humidity ?? 50)) / 5)).toFixed(1)}°C`],
+              ['Sunrise', weather?.sys?.sunrise ? new Date(weather.sys.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'],
+              ['Sunset', weather?.sys?.sunset ? new Date(weather.sys.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <p className="text-sky-300/70 text-[10px] uppercase tracking-wider">{label}</p>
+                <p className="text-white font-semibold text-sm">{value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* 7-day */}
+      {/* ── Crop Risk Intelligence ── */}
       <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-stone-100">
-          <h3 className="font-bold text-stone-800">7-Day Forecast</h3>
+        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-stone-800">Crop Risk Intelligence</h3>
+            <p className="text-xs text-stone-400 mt-0.5">Real-time agricultural risk indices from live weather data</p>
+          </div>
+          {cropName && (
+            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200 capitalize">{cropName}</span>
+          )}
         </div>
-        <div className="p-4 grid grid-cols-7 gap-2">
-          {days.map((d, i) => (
-            <div key={d} className={`flex flex-col items-center py-4 rounded-xl transition-all ${i === 0 ? 'bg-blue-50 border border-blue-200' : 'hover:bg-stone-50'}`}>
-              <span className="text-xs font-semibold text-stone-500">{d}</span>
-              <span className="text-2xl my-2">{icons[i]}</span>
-              <span className="text-sm font-bold text-stone-800">{temps[i]}°</span>
-            </div>
-          ))}
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Spray Window */}
+          {(() => {
+            const c = riskColor(spray.score, true)
+            return (
+              <div className="rounded-xl border border-stone-200 p-4 hover-lift">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌿</span>
+                    <h4 className="font-bold text-stone-800 text-sm">Spray Window</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${RISK_BADGES[c]}`}>{spray.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-stone-400">Safety Score</span>
+                  <span className="font-bold text-stone-700">{spray.score}%</span>
+                </div>
+                <div className={`h-2.5 rounded-full ${RISK_BGS[c]}`}>
+                  <div className={`h-full rounded-full bg-gradient-to-r ${RISK_FILLS[c]} transition-all duration-1000`} style={{ width: `${spray.score}%` }} />
+                </div>
+                {spray.factors.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-stone-100 space-y-1">
+                    {spray.factors.map((f, fi) => (
+                      <div key={fi} className="flex items-center justify-between text-[10px]">
+                        <span className="text-stone-400">{f.name}</span>
+                        <span className={`font-semibold ${f.ok ? 'text-emerald-600' : 'text-red-500'}`}>{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Disease Pressure */}
+          {(() => {
+            const c = riskColor(disease.score, false)
+            return (
+              <div className="rounded-xl border border-stone-200 p-4 hover-lift">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🦠</span>
+                    <h4 className="font-bold text-stone-800 text-sm">Disease Pressure</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${RISK_BADGES[c]}`}>{disease.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-stone-400">Fungal Risk</span>
+                  <span className="font-bold text-stone-700">{disease.score}%</span>
+                </div>
+                <div className={`h-2.5 rounded-full ${RISK_BGS[c]}`}>
+                  <div className={`h-full rounded-full bg-gradient-to-r ${RISK_FILLS[c]} transition-all duration-1000`} style={{ width: `${disease.score}%` }} />
+                </div>
+                <p className="text-[10px] text-stone-500 mt-2">{disease.detail}</p>
+              </div>
+            )
+          })()}
+
+          {/* Heat Stress */}
+          {(() => {
+            const c = riskColor(heat.score, false)
+            return (
+              <div className="rounded-xl border border-stone-200 p-4 hover-lift">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌡️</span>
+                    <h4 className="font-bold text-stone-800 text-sm">Heat Stress</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${RISK_BADGES[c]}`}>{heat.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-stone-400">Stress Level</span>
+                  <span className="font-bold text-stone-700">{heat.score}%</span>
+                </div>
+                <div className={`h-2.5 rounded-full ${RISK_BGS[c]}`}>
+                  <div className={`h-full rounded-full bg-gradient-to-r ${RISK_FILLS[c]} transition-all duration-1000`} style={{ width: `${heat.score}%` }} />
+                </div>
+                <p className="text-[10px] text-stone-500 mt-2">{heat.detail}</p>
+              </div>
+            )
+          })()}
+
+          {/* Frost Risk */}
+          {(() => {
+            const c = riskColor(frost.score, false)
+            return (
+              <div className="rounded-xl border border-stone-200 p-4 hover-lift">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">❄️</span>
+                    <h4 className="font-bold text-stone-800 text-sm">Frost Risk</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${RISK_BADGES[c]}`}>{frost.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-stone-400">Frost Probability</span>
+                  <span className="font-bold text-stone-700">{frost.score}%</span>
+                </div>
+                <div className={`h-2.5 rounded-full ${RISK_BGS[c]}`}>
+                  <div className={`h-full rounded-full bg-gradient-to-r ${RISK_FILLS[c]} transition-all duration-1000`} style={{ width: `${frost.score}%` }} />
+                </div>
+                <p className="text-[10px] text-stone-500 mt-2">{frost.detail}</p>
+              </div>
+            )
+          })()}
+
+          {/* Evapotranspiration */}
+          {(() => {
+            const c = et0.value > 5 ? 'red' : et0.value > 3 ? 'amber' : 'emerald'
+            return (
+              <div className="rounded-xl border border-stone-200 p-4 hover-lift">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">💧</span>
+                    <h4 className="font-bold text-stone-800 text-sm">Evapotranspiration</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${RISK_BADGES[c]}`}>{et0.label}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-stone-400">Water Loss Rate</span>
+                  <span className="font-bold text-stone-700">{et0.value} mm/day</span>
+                </div>
+                <div className={`h-2.5 rounded-full ${RISK_BGS[c]}`}>
+                  <div className={`h-full rounded-full bg-gradient-to-r ${RISK_FILLS[c]} transition-all duration-1000`} style={{ width: `${Math.min(100, (et0.value / 8) * 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-stone-500 mt-2">{et0.detail}</p>
+              </div>
+            )
+          })()}
         </div>
       </div>
 
-      {/* Farm weather insights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MiniCard title="Rainfall" value="12mm" sub="Expected this week" accent="sky" />
-        <MiniCard title="Humidity" value="65%" sub="Moderate levels" accent="blue" />
-        <MiniCard title="UV Index" value="6.2" sub="High — protect crops" accent="amber" />
-      </div>
+      {/* ── Golden Hour Planner ── */}
+      {goldenHours.length > 0 && (
+        <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-100">
+            <h3 className="font-bold text-stone-800">Golden Hour Planner</h3>
+            <p className="text-xs text-stone-400 mt-0.5">Best windows for farming activities over the next 24 hours</p>
+          </div>
+          <div className="p-4 overflow-x-auto">
+            <div className="flex gap-3 min-w-max pb-2">
+              {goldenHours.map((h, hi) => {
+                const cardBg = h.suitability === 'good'
+                  ? 'border-emerald-200 bg-emerald-50'
+                  : h.suitability === 'caution'
+                  ? 'border-amber-200 bg-amber-50'
+                  : 'border-red-200 bg-red-50'
+                const dot = h.suitability === 'good' ? 'bg-emerald-500' : h.suitability === 'caution' ? 'bg-amber-500' : 'bg-red-500'
+                return (
+                  <div key={hi} className={`w-[140px] shrink-0 rounded-xl border p-3 ${cardBg} hover-lift transition-all`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-stone-700">
+                        {h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className={`w-2 h-2 rounded-full ${dot}`} />
+                    </div>
+                    {h.icon && (
+                      <img src={`https://openweathermap.org/img/wn/${h.icon}.png`} alt="" className="w-10 h-10 mx-auto" />
+                    )}
+                    <p className="text-lg font-bold text-stone-800 text-center">{h.temp}°C</p>
+                    <p className="text-[10px] text-stone-500 text-center">{h.windKmh} km/h &middot; {h.humidity}%</p>
+                    {h.pop > 0 && (
+                      <p className="text-[10px] text-blue-600 font-semibold text-center mt-0.5">Rain {h.pop}%</p>
+                    )}
+                    <div className="mt-2 pt-2 border-t border-stone-200/60">
+                      <p className="text-[10px] font-semibold text-stone-600 text-center leading-tight">{h.activity}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Air Quality Impact on Crops ── */}
+      {airImpact && (
+        <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-stone-800">Air Quality Impact on Crops</h3>
+              <p className="text-xs text-stone-400 mt-0.5">Pollution effects on crop photosynthesis and leaf health</p>
+            </div>
+            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
+              airImpact.aqiColor === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
+              airImpact.aqiColor === 'teal' ? 'bg-teal-100 text-teal-700' :
+              airImpact.aqiColor === 'amber' ? 'bg-amber-100 text-amber-700' :
+              airImpact.aqiColor === 'orange' ? 'bg-orange-100 text-orange-700' :
+              airImpact.aqiColor === 'red' ? 'bg-red-100 text-red-700' :
+              'bg-stone-100 text-stone-700'
+            }`}>AQI: {airImpact.aqiLabel}</span>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="rounded-xl bg-stone-50 border border-stone-100 p-4">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">PM2.5</p>
+                <p className="text-2xl font-bold text-stone-800 mt-1">{airImpact.pm25} <span className="text-xs font-normal text-stone-400">µg/m³</span></p>
+                <p className="text-xs text-stone-500 mt-1">Photosynthesis: <span className="font-semibold">{airImpact.photoImpact}</span></p>
+              </div>
+              <div className="rounded-xl bg-stone-50 border border-stone-100 p-4">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">PM10</p>
+                <p className="text-2xl font-bold text-stone-800 mt-1">{airImpact.pm10} <span className="text-xs font-normal text-stone-400">µg/m³</span></p>
+                <p className="text-xs text-stone-500 mt-1">Leaf deposit: <span className="font-semibold">{parseFloat(airImpact.pm10) > 100 ? 'Heavy' : parseFloat(airImpact.pm10) > 50 ? 'Moderate' : 'Light'}</span></p>
+              </div>
+              <div className="rounded-xl bg-stone-50 border border-stone-100 p-4">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Ozone (O₃)</p>
+                <p className="text-2xl font-bold text-stone-800 mt-1">{airImpact.o3} <span className="text-xs font-normal text-stone-400">µg/m³</span></p>
+                <p className="text-xs text-stone-500 mt-1">Leaf damage: <span className="font-semibold">{airImpact.ozoneRisk}</span></p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-gradient-to-r from-stone-50 to-stone-100/50 border border-stone-100 p-4">
+              <p className="text-sm text-stone-600">{airImpact.detail}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 5-Day Agricultural Forecast ── */}
+      {agricast.length > 0 && (
+        <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-100">
+            <h3 className="font-bold text-stone-800">5-Day Agricultural Forecast</h3>
+            <p className="text-xs text-stone-400 mt-0.5">Weather outlook with crop-specific farming recommendations</p>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {agricast.map((day, di) => {
+              const tc = {
+                good: 'border-emerald-300 bg-emerald-50',
+                warning: 'border-amber-300 bg-amber-50',
+                danger: 'border-red-300 bg-red-50',
+                info: 'border-blue-300 bg-blue-50',
+              }
+              return (
+                <div key={di} className={`px-6 py-4 border-l-4 ${tc[day.adviceType]} hover:brightness-[0.98] transition-all`}>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      {day.mainIcon && (
+                        <img src={`https://openweathermap.org/img/wn/${day.mainIcon}.png`} alt="" className="w-10 h-10" />
+                      )}
+                      <div>
+                        <p className="font-bold text-stone-800 text-sm">{day.date}</p>
+                        <p className="text-xs text-stone-500">{day.minTemp}° — {day.maxTemp}°C</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 text-xs text-stone-500">
+                      <span>Humidity {day.avgHumidity}%</span>
+                      <span>Wind {day.maxWind} km/h</span>
+                      {parseFloat(day.totalRain) > 0 && (
+                        <span className="text-blue-600 font-semibold">Rain {day.totalRain}mm</span>
+                      )}
+                      {day.maxPop > 0 && <span className="text-blue-500">({day.maxPop}%)</span>}
+                    </div>
+                  </div>
+                  <p className="text-sm text-stone-600 mt-2 sm:ml-[52px]">{day.advice}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
