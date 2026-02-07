@@ -314,10 +314,10 @@ async def list_mandis():
     for mandi in latest_data['Mandi_Name'].unique():
         mandi_data = latest_data[latest_data['Mandi_Name'] == mandi]
         mandis_info.append({
-            "mandi_name": mandi,
-            "distance_km": mandi_data['Distance_km'].iloc[0],
+            "mandi_name": str(mandi),
+            "distance_km": float(mandi_data['Distance_km'].iloc[0]),
             "available_crops": mandi_data['Crop'].unique().tolist(),
-            "record_count": len(mandi_data)
+            "record_count": int(len(mandi_data))
         })
     
     return {

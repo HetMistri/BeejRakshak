@@ -23,12 +23,9 @@ const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: ICONS.home },
   { id: 'weather', label: 'Weather', icon: ICONS.weather },
   { id: 'mandi', label: 'Mandi Prices', icon: ICONS.mandi },
-  { id: 'satellite', label: 'SAR Monitor', icon: ICONS.satellite },
   { id: 'advisory', label: 'Crop Advisory', icon: ICONS.advisory },
   { id: 'alerts', label: 'Alert System', icon: ICONS.alerts },
   { id: 'calendar', label: 'Adaptive Calendar', icon: ICONS.calendar },
-  { id: 'imageqc', label: 'Image QC', icon: ICONS.imageQuality },
-  { id: 'selftrain', label: 'Self Training', icon: ICONS.selfTrain },
 ]
 
 function Icon({ d, className = 'w-5 h-5' }) {
@@ -189,12 +186,9 @@ export default function Dashboard({ session, onSignOut }) {
           {activeTab === 'overview' && <OverviewTab session={session} profile={profile} greeting={greeting} />}
           {activeTab === 'weather' && <WeatherTab profile={profile} />}
           {activeTab === 'mandi' && <MandiTab profile={profile} />}
-          {activeTab === 'satellite' && <SatelliteTab profile={profile} />}
           {activeTab === 'advisory' && <AdvisoryTab profile={profile} />}
           {activeTab === 'alerts' && <AlertSystemTab profile={profile} />}
           {activeTab === 'calendar' && <AdaptiveCalendarTab profile={profile} />}
-          {activeTab === 'imageqc' && <ImageQCTab profile={profile} />}
-          {activeTab === 'selftrain' && <SelfTrainingTab profile={profile} />}
         </main>
       </div>
     </div>
@@ -1020,121 +1014,412 @@ function WeatherTab({ profile }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   MANDI TAB
+   MANDI INTELLIGENCE — ML-POWERED PRICE RECOMMENDATIONS
    ═══════════════════════════════════════════════════ */
+
 function MandiTab({ profile }) {
-  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Wheat'
-  const prices = [
-    { mandi: 'Ahmedabad APMC', price: '₹2,450', trend: 'up', change: '+₹120' },
-    { mandi: 'Rajkot Market', price: '₹2,380', trend: 'down', change: '-₹40' },
-    { mandi: 'Surat Mandi', price: '₹2,510', trend: 'up', change: '+₹85' },
-    { mandi: 'Vadodara APMC', price: '₹2,420', trend: 'stable', change: '₹0' },
-  ]
+  const [apiOnline, setApiOnline] = useState(null) // null=checking, true/false
+  const [availableCrops, setAvailableCrops] = useState([])
+  const [mandisList, setMandisList] = useState([])
+  const [selectedCrop, setSelectedCrop] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [recommendation, setRecommendation] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  return (
-    <div className="space-y-6 max-w-6xl animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-800">Mandi Prices</h2>
-        <span className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full border border-amber-200">{crop}</span>
-      </div>
+  /* ── Check API health + fetch mandis on mount ── */
+  const initApi = useCallback(async () => {
+    setApiOnline(null)
+    try {
+      const hRes = await fetch('/mandi-api/health')
+      if (!hRes.ok) throw new Error('API not reachable')
+      const health = await hRes.json()
+      if (!health.models_loaded) throw new Error('ML models not loaded yet')
+      setApiOnline(true)
 
-      {/* Price highlight */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 md:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white/[0.06] rounded-full -translate-y-1/3 translate-x-1/4" />
-        <div className="relative z-10">
-          <p className="text-amber-100 text-sm font-medium">Best price today for {crop}</p>
-          <p className="text-4xl font-extrabold mt-2">₹2,510 <span className="text-lg font-medium text-amber-200">/ quintal</span></p>
-          <p className="text-amber-100 text-sm mt-1">Surat Mandi — 45 km from your location</p>
-        </div>
-      </div>
+      const mRes = await fetch('/mandi-api/mandis')
+      if (mRes.ok) {
+        const mData = await mRes.json()
+        setMandisList(mData.mandis || [])
+        // Extract unique crops from all mandis
+        const crops = [...new Set((mData.mandis || []).flatMap(m => m.available_crops || []))]
+        setAvailableCrops(crops)
+        // Auto-select farmer's crop if available, else first
+        const farmerCrop = profile?.primary_crop ? cap(profile.primary_crop) : ''
+        if (crops.includes(farmerCrop)) setSelectedCrop(farmerCrop)
+        else if (crops.length) setSelectedCrop(crops[0])
+      }
+    } catch {
+      setApiOnline(false)
+    }
+  }, [profile?.primary_crop])
 
-      {/* Price table */}
-      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-stone-100">
-          <h3 className="font-bold text-stone-800">Nearby Mandis</h3>
-        </div>
-        <div className="divide-y divide-stone-100">
-          {prices.map((p, i) => (
-            <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
-              <div>
-                <p className="font-semibold text-stone-800">{p.mandi}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{crop} per quintal</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-stone-800">{p.price}</p>
-                <p className={`text-xs font-medium ${p.trend === 'up' ? 'text-emerald-600' : p.trend === 'down' ? 'text-red-500' : 'text-stone-400'}`}>
-                  {p.change}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+  useEffect(() => {
+    initApi()
+  }, [initApi])
+
+  /* Pre-fill quantity from profile land area */
+  useEffect(() => {
+    if (!quantity && profile?.land_area) {
+      // Rough estimate: 1 acre ~ 1000 kg yield, 1 hectare ~ 2500 kg
+      const unit = (profile.land_unit || 'acre').toLowerCase()
+      const area = parseFloat(profile.land_area) || 1
+      const est = unit.includes('hectare') ? area * 2500 : area * 1000
+      setQuantity(String(Math.round(est)))
+    }
+  }, [profile?.land_area, profile?.land_unit, quantity])
+
+  /* ── Fetch ML recommendation ── */
+  const fetchRecommendation = useCallback(async () => {
+    if (!selectedCrop || !quantity) return
+    setLoading(true)
+    setError(null)
+    setRecommendation(null)
+    try {
+      const body = {
+        crop: selectedCrop,
+        quantity: parseFloat(quantity) || 1000,
+      }
+      if (profile?.latitude && profile?.longitude) {
+        body.latitude = parseFloat(profile.latitude)
+        body.longitude = parseFloat(profile.longitude)
+      }
+      if (profile?.village || profile?.district) {
+        body.farmer_location = profile.village || profile.district
+      }
+
+      const res = await fetch('/mandi-api/response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.detail || `Request failed (${res.status})`)
+      }
+      const data = await res.json()
+      setRecommendation(data)
+    } catch (e) {
+      setError(e.message || 'Failed to get recommendation')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedCrop, quantity, profile?.latitude, profile?.longitude, profile?.village, profile?.district])
+
+  /* Auto-fetch when crop/quantity ready */
+  useEffect(() => {
+    if (apiOnline && selectedCrop && quantity) fetchRecommendation()
+  }, [apiOnline, selectedCrop]) // intentionally only on crop change, not every quantity keystroke
+
+  const fmt = (n) => {
+    if (n == null) return '—'
+    return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })
+  }
+  const fmtKg = (n) => {
+    if (n == null) return '—'
+    return '₹' + Number(n).toFixed(2) + '/kg'
+  }
+
+  /* ── API offline / checking state ── */
+  if (apiOnline === null) return (
+    <div className="flex items-center justify-center py-32 animate-fade-in">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-stone-600 font-semibold">Connecting to Mandi Intelligence...</p>
+        <p className="text-stone-400 text-sm mt-1">Loading ML models and market data</p>
       </div>
     </div>
   )
-}
 
-/* ═══════════════════════════════════════════════════
-   SATELLITE TAB
-   ═══════════════════════════════════════════════════ */
-function SatelliteTab({ profile }) {
+  if (apiOnline === false) return (
+    <div className="max-w-6xl animate-fade-in">
+      <div className="rounded-2xl bg-amber-50 border border-amber-200 p-8 text-center">
+        <span className="text-4xl mb-4 block">📡</span>
+        <p className="text-amber-800 font-bold text-lg">Mandi Intelligence API Offline</p>
+        <p className="text-amber-600 text-sm mt-2 max-w-md mx-auto">
+          The ML prediction server is not running. Start it with:<br />
+          <code className="mt-2 inline-block bg-amber-100 border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-mono">
+            cd AIML/mandi_intelligence/api && uvicorn main:app --port 8000
+          </code>
+        </p>
+        <button
+          onClick={initApi}
+          className="mt-4 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-colors"
+        >
+          Retry Connection
+        </button>
+      </div>
+    </div>
+  )
+
+  const best = recommendation?.best_option
+  const alts = recommendation?.alternatives || []
+  // Combine best + alternatives for comparison, sorted by net profit
+  const allOptions = best ? [best, ...alts].sort((a, b) => b.net_profit - a.net_profit) : []
+  const maxProfit = allOptions.length ? Math.max(...allOptions.map(o => o.net_profit)) : 1
+
   return (
     <div className="space-y-6 max-w-6xl animate-fade-in">
-      <h2 className="text-2xl font-bold text-stone-800">SAR Satellite Monitoring</h2>
-
-      {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-br from-[#0c1f17] to-[#0a2a1f] p-6 md:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-1/2 right-8 -translate-y-1/2 w-40 h-40 opacity-30">
-          <div className="absolute inset-0 rounded-full border-2 border-emerald-500/50" />
-          <div className="absolute inset-4 rounded-full border border-emerald-500/30" />
-          <div className="absolute inset-8 rounded-full border border-emerald-500/20" />
-          <div className="absolute inset-[68px] rounded-full bg-emerald-400 animate-pulse" />
-          <div className="absolute inset-0 origin-center animate-radar">
-            <div className="w-1/2 h-0.5 bg-gradient-to-r from-emerald-400/80 to-transparent mt-[calc(50%-1px)] ml-[50%]" />
-          </div>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-stone-800">Mandi Intelligence</h2>
+          <p className="text-xs text-stone-400">ML-Powered Price Predictions &amp; Profit Optimization</p>
         </div>
-        <div className="relative z-10 max-w-lg">
-          <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider">Synthetic Aperture Radar</p>
-          <h3 className="text-xl font-bold mt-2">Government SAR Satellites</h3>
-          <p className="text-emerald-200/60 text-sm mt-2">Works through clouds, day and night. Monitoring your farm for soil moisture, crop health, flood risk, and sowing validation.</p>
-        </div>
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-xs font-bold text-emerald-700">ML Online</span>
+        </span>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Soil Moisture', value: '68%', icon: '🌧️', color: 'emerald' },
-          { label: 'Flood Risk', value: 'Low', icon: '🚜', color: 'blue' },
-          { label: 'Crop Growth', value: 'Normal', icon: '🌱', color: 'teal' },
-          { label: 'Sowing Valid.', value: 'Verified', icon: '⏱️', color: 'amber' },
-        ].map((m, i) => (
-          <div key={i} className="rounded-2xl bg-white border border-stone-200/80 shadow-sm p-5 hover-lift">
-            <span className="text-2xl">{m.icon}</span>
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mt-3">{m.label}</p>
-            <p className="text-xl font-bold text-stone-800 mt-1">{m.value}</p>
+      {/* ── Controls: Crop + Quantity + Button ── */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm p-5">
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5 block">Crop</label>
+            <select
+              value={selectedCrop}
+              onChange={(e) => setSelectedCrop(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+            >
+              {availableCrops.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5 block">Quantity (kg)</label>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="e.g. 1000"
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+            />
+          </div>
+          <button
+            onClick={fetchRecommendation}
+            disabled={loading || !selectedCrop || !quantity}
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-bold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 flex items-center gap-2"
+          >
+            {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {loading ? 'Analyzing...' : 'Get Recommendation'}
+          </button>
+        </div>
+        {profile?.village && (
+          <p className="text-[10px] text-stone-400 mt-2">
+            Location: {profile.village}{profile.district ? `, ${profile.district}` : ''}
+            {profile.latitude ? ` (${Number(profile.latitude).toFixed(4)}, ${Number(profile.longitude).toFixed(4)})` : ''}
+          </p>
+        )}
       </div>
 
-      {/* Gauges */}
-      {profile?.satellite_consent && (
-        <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm p-6">
-          <h3 className="font-bold text-stone-800 mb-4">Farm Health Metrics</h3>
-          <div className="space-y-4">
-            <GaugeBar label="Soil Moisture" value={68} max={100} color="emerald" unit="%" />
-            <GaugeBar label="NDVI (Crop Health)" value={0.72} max={1} color="teal" unit="" />
-            <GaugeBar label="Flood Risk Index" value={12} max={100} color="blue" unit="%" />
-            <GaugeBar label="Growth Consistency" value={85} max={100} color="amber" unit="%" />
+      {/* ── Error state ── */}
+      {error && (
+        <div className="rounded-2xl bg-red-50 border border-red-200 p-5">
+          <p className="text-red-700 font-semibold text-sm">Recommendation Failed</p>
+          <p className="text-red-500 text-xs mt-1">{error}</p>
+          <button onClick={fetchRecommendation} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors">Retry</button>
+        </div>
+      )}
+
+      {/* ── Loading state ── */}
+      {loading && !recommendation && (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-stone-500 text-sm font-medium">Running ML price prediction...</p>
+            <p className="text-stone-400 text-xs mt-1">Analyzing {mandisList.length} mandis for {selectedCrop}</p>
           </div>
         </div>
       )}
 
-      {profile?.latitude && (
-        <div className="rounded-2xl bg-stone-50 border border-stone-200 p-6 text-center">
-          <p className="text-sm text-stone-500">
-            Farm coordinates: <span className="font-mono font-semibold text-stone-700">{Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}</span>
-          </p>
-        </div>
+      {/* ── Recommendation Results ── */}
+      {recommendation && best && (
+        <>
+          {/* ── Best Option Hero ── */}
+          <div className="rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 md:p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.06] rounded-full -translate-y-1/3 translate-x-1/4" />
+            <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/[0.04] rounded-full translate-y-1/2" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-amber-100 text-xs font-semibold uppercase tracking-wider">ML Best Recommendation</p>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  best.recommendation?.toLowerCase().includes('wait')
+                    ? 'bg-white/20 text-amber-100'
+                    : 'bg-white/30 text-white'
+                }`}>
+                  {best.recommendation || 'Sell Now'}
+                </span>
+              </div>
+              <div className="flex items-end gap-3 mt-2">
+                <p className="text-4xl md:text-5xl font-extrabold tracking-tight">{fmt(best.net_profit)}</p>
+                <p className="text-amber-200 text-sm mb-1.5">net profit</p>
+              </div>
+              <p className="text-amber-100 text-lg font-semibold mt-2">{best.mandi_name}</p>
+              <div className="flex gap-4 mt-1 text-amber-200/80 text-sm">
+                <span>{best.distance_km.toFixed(0)} km away</span>
+                <span>{fmtKg(best.current_price)}</span>
+                <span>{recommendation.quantity} kg</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Profit Breakdown ── */}
+          <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100">
+              <h3 className="font-bold text-stone-800">Profit Breakdown — {best.mandi_name}</h3>
+              <p className="text-xs text-stone-400 mt-0.5">Full cost analysis for {recommendation.quantity} kg of {recommendation.crop}</p>
+            </div>
+            <div className="p-6">
+              <div className="space-y-3">
+                {/* Gross Revenue */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-sm">💰</div>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-800">Gross Revenue</p>
+                      <p className="text-[10px] text-stone-400">{fmtKg(best.current_price)} × {recommendation.quantity} kg</p>
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-emerald-600">+{fmt(best.gross_revenue)}</p>
+                </div>
+                {/* Transport Cost */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-sm">🚛</div>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-800">Transport Cost</p>
+                      <p className="text-[10px] text-stone-400">{best.distance_km.toFixed(0)} km × ₹5/km</p>
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-red-500">-{fmt(best.transport_cost)}</p>
+                </div>
+                {/* Storage Cost */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-sm">🏪</div>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-800">Storage &amp; Spoilage</p>
+                      <p className="text-[10px] text-stone-400">Perishability + traffic factors</p>
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-amber-600">-{fmt(best.storage_cost)}</p>
+                </div>
+                {/* Divider */}
+                <div className="border-t-2 border-dashed border-stone-200 my-2" />
+                {/* Net Profit */}
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-4 -mx-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-lg shadow-md">✅</div>
+                    <div>
+                      <p className="text-sm font-bold text-stone-800">Net Profit</p>
+                      <p className="text-[10px] text-stone-500">After all costs deducted</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-extrabold text-emerald-700">{fmt(best.net_profit)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── ML Justification ── */}
+          {recommendation.summary && (
+            <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-sm shrink-0 mt-0.5">🧠</div>
+                <div>
+                  <p className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">ML Analysis</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{recommendation.summary}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Mandi Comparison ── */}
+          {allOptions.length > 1 && (
+            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-stone-100">
+                <h3 className="font-bold text-stone-800">All Mandi Options — Ranked by Net Profit</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Comparing {allOptions.length} mandis for {recommendation.quantity} kg {recommendation.crop}</p>
+              </div>
+              <div className="divide-y divide-stone-100">
+                {allOptions.map((opt, i) => {
+                  const isBest = opt.mandi_name === best.mandi_name && opt.net_profit === best.net_profit
+                  const profitPct = maxProfit > 0 ? (opt.net_profit / maxProfit) * 100 : 0
+                  const isWait = opt.recommendation?.toLowerCase().includes('wait')
+                  return (
+                    <div key={i} className={`px-6 py-4 ${isBest ? 'bg-emerald-50/50' : 'hover:bg-stone-50'} transition-colors`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                            isBest ? 'bg-emerald-500 text-white' : 'bg-stone-100 text-stone-500'
+                          }`}>
+                            {i + 1}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-stone-800 text-sm flex items-center gap-2">
+                              {opt.mandi_name}
+                              {isBest && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">BEST</span>}
+                            </p>
+                            <p className="text-[10px] text-stone-400">{opt.distance_km.toFixed(0)} km &middot; {fmtKg(opt.current_price)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-lg font-bold ${isBest ? 'text-emerald-700' : 'text-stone-800'}`}>{fmt(opt.net_profit)}</p>
+                          <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${
+                            isWait ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {opt.recommendation}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Profit bar */}
+                      <div className="h-2 rounded-full bg-stone-100">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            isBest ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' : 'bg-gradient-to-r from-amber-300 to-amber-500'
+                          }`}
+                          style={{ width: `${Math.max(5, profitPct)}%` }}
+                        />
+                      </div>
+                      {/* Cost summary row */}
+                      <div className="flex gap-4 mt-2 text-[10px] text-stone-400">
+                        <span>Revenue: {fmt(opt.gross_revenue)}</span>
+                        <span>Transport: -{fmt(opt.transport_cost)}</span>
+                        <span>Storage: -{fmt(opt.storage_cost)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Available Mandis Info ── */}
+          {mandisList.length > 0 && (
+            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-stone-100">
+                <h3 className="font-bold text-stone-800">Connected Mandis</h3>
+                <p className="text-xs text-stone-400 mt-0.5">{mandisList.length} mandis with live data from Gujarat AGMARKNET</p>
+              </div>
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {mandisList.map((m, mi) => (
+                  <div key={mi} className="rounded-xl bg-stone-50 border border-stone-100 p-3 hover-lift">
+                    <p className="text-sm font-semibold text-stone-800">{m.mandi_name}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">{m.distance_km?.toFixed(0) || '?'} km &middot; {m.record_count} records</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {(m.available_crops || []).map(c => (
+                        <span key={c} className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                          c === selectedCrop ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-stone-100 text-stone-500'
+                        }`}>{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -1495,249 +1780,6 @@ function AdaptiveCalendarTab({ profile }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════
-   IMAGE-BASED QUALITY ESTIMATION TAB
-   ═══════════════════════════════════════════════════ */
-function ImageQCTab({ profile }) {
-  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
-
-  const QUALITY_PARAMS = [
-    { name: 'Grain Size', score: 88, grade: 'A', desc: 'Above average grain size detected', color: 'emerald' },
-    { name: 'Color Consistency', score: 74, grade: 'B+', desc: 'Slight color variation in 12% of samples', color: 'teal' },
-    { name: 'Moisture Content', score: 91, grade: 'A+', desc: 'Optimal moisture level for storage', color: 'blue' },
-    { name: 'Foreign Matter', score: 95, grade: 'A+', desc: 'Minimal foreign particles detected', color: 'emerald' },
-    { name: 'Damage Index', score: 82, grade: 'A', desc: '4% pest damage, 2% mechanical damage', color: 'amber' },
-    { name: 'Overall Grade', score: 86, grade: 'A', desc: 'Premium quality — eligible for higher mandi rate', color: 'emerald' },
-  ]
-
-  const HISTORY = [
-    { date: 'Feb 5, 2026', crop: crop, grade: 'A', score: 86, status: 'Premium' },
-    { date: 'Jan 20, 2026', crop: crop, grade: 'B+', score: 78, status: 'Standard' },
-    { date: 'Jan 8, 2026', crop: crop, grade: 'A', score: 84, status: 'Premium' },
-  ]
-
-  return (
-    <div className="space-y-6 max-w-6xl animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-800">Image-Based Quality Estimation</h2>
-        <span className="px-3 py-1.5 bg-violet-50 text-violet-700 text-xs font-semibold rounded-full border border-violet-200">AI Vision</span>
-      </div>
-
-      {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 p-6 md:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
-        <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/[0.04] rounded-full translate-y-1/3" />
-        <div className="relative z-10">
-          <p className="text-violet-200 text-xs font-semibold uppercase tracking-wider">Computer Vision + ML</p>
-          <h3 className="text-xl font-bold mt-2">Snap a photo. Get instant quality grade.</h3>
-          <p className="text-violet-100/70 text-sm mt-2 max-w-xl">
-            Our on-device ML model analyses grain images for size, color, moisture, damage, and foreign matter.
-            Get a mandi-ready quality certificate in seconds — no lab needed.
-          </p>
-        </div>
-      </div>
-
-      {/* Upload area */}
-      <div className="rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50/50 p-8 text-center hover:border-violet-400 hover:bg-violet-50 transition-all cursor-pointer">
-        <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-4">
-          <Icon d={ICONS.imageQuality} className="w-8 h-8 text-violet-500" />
-        </div>
-        <p className="font-bold text-stone-800">Upload crop image for analysis</p>
-        <p className="text-sm text-stone-500 mt-1">Take a photo of your grain sample or upload from gallery</p>
-        <div className="mt-4 flex justify-center gap-3">
-          <span className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-bold shadow-lg shadow-violet-500/25">
-            Take Photo
-          </span>
-          <span className="px-4 py-2.5 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-bold">
-            Upload Image
-          </span>
-        </div>
-      </div>
-
-      {/* Latest analysis */}
-      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="font-bold text-stone-800">Latest Analysis — {crop}</h3>
-          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">Grade A</span>
-        </div>
-        <div className="p-6 space-y-4">
-          {QUALITY_PARAMS.map((p, i) => (
-            <div key={i}>
-              <div className="flex items-center justify-between text-sm mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-stone-700">{p.name}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    p.grade.startsWith('A') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>{p.grade}</span>
-                </div>
-                <span className="font-bold text-stone-800">{p.score}%</span>
-              </div>
-              <GaugeBar label="" value={p.score} max={100} color={p.color} unit="" />
-              <p className="text-xs text-stone-400 mt-1">{p.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* History */}
-      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-stone-100">
-          <h3 className="font-bold text-stone-800">Analysis History</h3>
-        </div>
-        <div className="divide-y divide-stone-100">
-          {HISTORY.map((h, i) => (
-            <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
-              <div>
-                <p className="font-semibold text-stone-800 text-sm">{h.crop}</p>
-                <p className="text-xs text-stone-400">{h.date}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-stone-700">{h.score}%</span>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                  h.status === 'Premium' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                }`}>{h.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════
-   SELF TRAINING TAB
-   ═══════════════════════════════════════════════════ */
-function SelfTrainingTab({ profile }) {
-  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
-
-  const MODULES = [
-    {
-      id: 1, title: 'Understanding SAR Satellite Data', level: 'Beginner', duration: '8 min',
-      desc: 'Learn how Synthetic Aperture Radar works, what soil moisture maps mean, and how to use satellite data for irrigation decisions.',
-      lessons: 4, completed: 3, color: 'from-teal-500 to-emerald-600', icon: '🛰️',
-    },
-    {
-      id: 2, title: `Best Practices for ${crop} Cultivation`, level: 'Intermediate', duration: '12 min',
-      desc: `Stage-wise guide for ${crop}: soil preparation, sowing techniques, water management, and harvest timing based on NDVI data.`,
-      lessons: 6, completed: 2, color: 'from-amber-500 to-orange-600', icon: '🌾',
-    },
-    {
-      id: 3, title: 'Reading Mandi Price Trends', level: 'Beginner', duration: '6 min',
-      desc: 'How to interpret price charts, identify best selling windows, and use price alerts to maximize your income.',
-      lessons: 3, completed: 3, color: 'from-purple-500 to-violet-600', icon: '📈',
-    },
-    {
-      id: 4, title: 'Pest & Disease Identification', level: 'Intermediate', duration: '10 min',
-      desc: 'Visual guide to common pests and diseases. Learn to spot early signs and take preventive action before crop damage spreads.',
-      lessons: 5, completed: 1, color: 'from-red-500 to-rose-600', icon: '🔬',
-    },
-    {
-      id: 5, title: 'Government Schemes & Subsidies', level: 'Beginner', duration: '5 min',
-      desc: 'Navigate PM-KISAN, crop insurance, MSP schemes, and subsidy applications. Step-by-step with Aadhaar linkage.',
-      lessons: 3, completed: 0, color: 'from-blue-500 to-indigo-600', icon: '🏛️',
-    },
-    {
-      id: 6, title: 'Image-Based Crop Grading', level: 'Advanced', duration: '15 min',
-      desc: 'Master the art of grain quality assessment. Learn what makes Grade A vs Grade B, and how to prepare samples for mandi certification.',
-      lessons: 4, completed: 0, color: 'from-fuchsia-500 to-pink-600', icon: '📸',
-    },
-  ]
-
-  const totalLessons = MODULES.reduce((s, m) => s + m.lessons, 0)
-  const completedLessons = MODULES.reduce((s, m) => s + m.completed, 0)
-  const overallProgress = Math.round((completedLessons / totalLessons) * 100)
-
-  return (
-    <div className="space-y-6 max-w-6xl animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-800">Self Training</h2>
-        <span className="text-xs text-stone-400">{completedLessons}/{totalLessons} lessons completed</span>
-      </div>
-
-      {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-700 p-6 md:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
-        <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-white/[0.03] rounded-full translate-y-1/2" />
-        <div className="relative z-10">
-          <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Learn at your own pace</p>
-          <h3 className="text-xl font-bold mt-2">Knowledge is the best seed</h3>
-          <p className="text-emerald-100/70 text-sm mt-2 max-w-xl">
-            Bite-sized, practical modules designed for farmers. Available in your preferred language.
-            Learn about satellite data, crop management, market strategies, and government schemes.
-          </p>
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex-1 max-w-xs">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-emerald-200">Overall Progress</span>
-                <span className="font-bold">{overallProgress}%</span>
-              </div>
-              <div className="h-2 bg-white/20 rounded-full">
-                <div className="h-full bg-white rounded-full transition-all duration-700" style={{ width: `${overallProgress}%` }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MiniCard title="Modules" value={String(MODULES.length)} sub="Available courses" accent="sky" />
-        <MiniCard title="Completed" value={String(MODULES.filter(m => m.completed === m.lessons).length)} sub={`of ${MODULES.length} modules`} accent="blue" />
-        <MiniCard title="Lessons Done" value={String(completedLessons)} sub={`of ${totalLessons} total`} accent="amber" />
-        <MiniCard title="Avg Duration" value="9 min" sub="Per module" accent="sky" />
-      </div>
-
-      {/* Modules grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {MODULES.map((m) => {
-          const pct = Math.round((m.completed / m.lessons) * 100)
-          const done = m.completed === m.lessons
-          return (
-            <div key={m.id} className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden hover-lift group cursor-pointer">
-              <div className={`h-2 bg-gradient-to-r ${m.color}`} />
-              <div className="p-5">
-                <div className="flex items-start gap-3">
-                  <span className="text-3xl">{m.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-stone-800 text-sm leading-snug">{m.title}</h4>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">{m.level}</span>
-                      <span className="text-[10px] text-stone-400">{m.duration}</span>
-                      <span className="text-[10px] text-stone-400">{m.lessons} lessons</span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-stone-500 mt-3 leading-relaxed">{m.desc}</p>
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-[10px] mb-1">
-                    <span className="text-stone-400">{m.completed}/{m.lessons} lessons</span>
-                    <span className="font-bold text-stone-600">{pct}%</span>
-                  </div>
-                  <div className="h-1.5 bg-stone-100 rounded-full">
-                    <div className={`h-full rounded-full bg-gradient-to-r ${m.color} transition-all duration-700`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-                <div className="mt-3 flex justify-end">
-                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
-                    done
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-stone-100 text-stone-600 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md'
-                  }`}>
-                    {done ? 'Completed' : m.completed > 0 ? 'Continue' : 'Start'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
       </div>
     </div>
   )
