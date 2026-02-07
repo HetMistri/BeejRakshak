@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Configure Paths so sub-modules can be imported
@@ -22,6 +23,17 @@ app = FastAPI(
     title="BeejRakshak Unified API",
     description="Unified API for Mandi Intelligence and Government Scheme Assistance",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://beej-rakshak.vercel.app",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount the sub-applications
@@ -50,6 +62,11 @@ def root():
         },
         "status": "operational"
     }
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
