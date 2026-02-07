@@ -1336,7 +1336,7 @@ function MandiTab({ profile }) {
   const [recommendation, setRecommendation] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const mandiBase = (import.meta.env.VITE_MANDI_API_BASE || '/mandi-api').replace(/\/$/, '')
+  const mandiBase = (import.meta.env.VITE_MANDI_API_BASE || '/mandi').replace(/\/$/, '')
 
   /* ── Check API health + fetch mandis on mount ── */
   const initApi = useCallback(async () => {
