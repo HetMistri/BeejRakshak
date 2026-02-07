@@ -1426,64 +1426,342 @@ function MandiTab({ profile }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   ADVISORY TAB
+   CROP ADVISORY — AI-POWERED CROP RECOMMENDATION ENGINE
    ═══════════════════════════════════════════════════ */
+
+const CROP_DATABASE = [
+  // Kharif crops (Jun-Oct)
+  { name: 'Rice', icon: '🌾', season: 'kharif', tempRange: [22, 37], humRange: [60, 90], waterNeed: 'High', duration: '120-150 days', soilType: 'Clay/Loamy', msp: '₹2,300/q', gradient: 'from-emerald-500 to-teal-600' },
+  { name: 'Cotton', icon: '🏵️', season: 'kharif', tempRange: [21, 35], humRange: [40, 70], waterNeed: 'Medium', duration: '150-180 days', soilType: 'Black/Alluvial', msp: '₹7,121/q', gradient: 'from-sky-500 to-blue-600' },
+  { name: 'Groundnut', icon: '🥜', season: 'kharif', tempRange: [25, 35], humRange: [40, 70], waterNeed: 'Low', duration: '100-130 days', soilType: 'Sandy Loam', msp: '₹6,377/q', gradient: 'from-amber-500 to-yellow-600' },
+  { name: 'Bajra', icon: '🌿', season: 'kharif', tempRange: [25, 40], humRange: [30, 60], waterNeed: 'Low', duration: '60-90 days', soilType: 'Sandy/Light', msp: '₹2,500/q', gradient: 'from-lime-500 to-green-600' },
+  { name: 'Castor', icon: '🌱', season: 'kharif', tempRange: [20, 35], humRange: [40, 65], waterNeed: 'Low', duration: '120-180 days', soilType: 'Well-drained', msp: '₹6,015/q', gradient: 'from-violet-500 to-purple-600' },
+  { name: 'Soybean', icon: '🫘', season: 'kharif', tempRange: [20, 30], humRange: [50, 75], waterNeed: 'Medium', duration: '90-120 days', soilType: 'Loamy/Clay', msp: '₹4,892/q', gradient: 'from-orange-500 to-red-600' },
+  // Rabi crops (Nov-Mar)
+  { name: 'Wheat', icon: '🌾', season: 'rabi', tempRange: [10, 25], humRange: [30, 60], waterNeed: 'Medium', duration: '110-130 days', soilType: 'Loamy/Clay', msp: '₹2,275/q', gradient: 'from-amber-500 to-orange-600' },
+  { name: 'Mustard', icon: '🌼', season: 'rabi', tempRange: [10, 25], humRange: [30, 55], waterNeed: 'Low', duration: '110-140 days', soilType: 'Loamy/Sandy', msp: '₹5,650/q', gradient: 'from-yellow-500 to-amber-600' },
+  { name: 'Gram', icon: '🫛', season: 'rabi', tempRange: [10, 30], humRange: [30, 50], waterNeed: 'Low', duration: '90-120 days', soilType: 'Sandy Loam', msp: '₹5,440/q', gradient: 'from-rose-500 to-pink-600' },
+  { name: 'Cumin', icon: '🌿', season: 'rabi', tempRange: [15, 30], humRange: [25, 50], waterNeed: 'Low', duration: '100-120 days', soilType: 'Sandy Loam', msp: '₹25,000/q', gradient: 'from-teal-500 to-cyan-600' },
+  { name: 'Onion', icon: '🧅', season: 'rabi', tempRange: [13, 30], humRange: [40, 70], waterNeed: 'Medium', duration: '120-150 days', soilType: 'Loamy/Alluvial', msp: '—', gradient: 'from-red-500 to-rose-600' },
+  { name: 'Potato', icon: '🥔', season: 'rabi', tempRange: [10, 25], humRange: [40, 70], waterNeed: 'Medium', duration: '80-120 days', soilType: 'Sandy Loam', msp: '—', gradient: 'from-amber-600 to-yellow-700' },
+  // Zaid crops (Mar-Jun)
+  { name: 'Watermelon', icon: '🍉', season: 'zaid', tempRange: [25, 40], humRange: [40, 70], waterNeed: 'High', duration: '80-110 days', soilType: 'Sandy Loam', msp: '—', gradient: 'from-green-500 to-emerald-600' },
+  { name: 'Cucumber', icon: '🥒', season: 'zaid', tempRange: [20, 35], humRange: [50, 75], waterNeed: 'Medium', duration: '50-70 days', soilType: 'Loamy', msp: '—', gradient: 'from-lime-500 to-teal-600' },
+  { name: 'Tomato', icon: '🍅', season: 'zaid', tempRange: [18, 35], humRange: [40, 70], waterNeed: 'Medium', duration: '60-90 days', soilType: 'Loamy/Sandy', msp: '—', gradient: 'from-red-500 to-orange-600' },
+  { name: 'Muskmelon', icon: '🍈', season: 'zaid', tempRange: [24, 38], humRange: [40, 65], waterNeed: 'Medium', duration: '70-90 days', soilType: 'Sandy Loam', msp: '—', gradient: 'from-yellow-400 to-amber-500' },
+]
+
+function getCurrentSeason() {
+  const m = new Date().getMonth()
+  if (m >= 5 && m <= 9) return 'kharif'
+  if (m >= 10 || m <= 2) return 'rabi'
+  return 'zaid'
+}
+
+function computeCropSuitability(crop, weather, season) {
+  if (!weather) return { score: 0, factors: [] }
+  const temp = weather.main?.temp ?? 25
+  const humidity = weather.main?.humidity ?? 50
+  const windSpeed = (weather.wind?.speed || 0) * 3.6
+  const clouds = weather.clouds?.all ?? 30
+  const factors = []
+  let score = 0
+
+  // Temperature match (0-30)
+  const [tMin, tMax] = crop.tempRange
+  const tMid = (tMin + tMax) / 2
+  if (temp >= tMin && temp <= tMax) {
+    const closeness = 1 - Math.abs(temp - tMid) / ((tMax - tMin) / 2)
+    const pts = Math.round(20 + closeness * 10)
+    score += pts
+    factors.push({ name: 'Temperature', value: `${temp.toFixed(1)}°C`, detail: `Optimal: ${tMin}–${tMax}°C`, good: true, pts })
+  } else {
+    const dist = temp < tMin ? tMin - temp : temp - tMax
+    const pts = Math.max(0, Math.round(15 - dist * 2))
+    score += pts
+    factors.push({ name: 'Temperature', value: `${temp.toFixed(1)}°C`, detail: `Optimal: ${tMin}–${tMax}°C`, good: false, pts })
+  }
+
+  // Humidity match (0-20)
+  const [hMin, hMax] = crop.humRange
+  if (humidity >= hMin && humidity <= hMax) {
+    score += 20
+    factors.push({ name: 'Humidity', value: `${humidity}%`, detail: `Optimal: ${hMin}–${hMax}%`, good: true, pts: 20 })
+  } else {
+    const dist = humidity < hMin ? hMin - humidity : humidity - hMax
+    const pts = Math.max(0, Math.round(12 - dist * 0.5))
+    score += pts
+    factors.push({ name: 'Humidity', value: `${humidity}%`, detail: `Optimal: ${hMin}–${hMax}%`, good: false, pts })
+  }
+
+  // Season match (0-30)
+  if (crop.season === season) {
+    score += 30
+    factors.push({ name: 'Season', value: cap(season), detail: `This is ${cap(crop.season)} crop`, good: true, pts: 30 })
+  } else {
+    // Adjacent season partial credit
+    const order = ['rabi', 'zaid', 'kharif']
+    const ci = order.indexOf(crop.season), si = order.indexOf(season)
+    const adjacent = Math.abs(ci - si) === 1 || Math.abs(ci - si) === 2
+    const pts = adjacent ? 8 : 3
+    score += pts
+    factors.push({ name: 'Season', value: cap(season), detail: `Best in ${cap(crop.season)} season`, good: false, pts })
+  }
+
+  // Wind suitability (0-10)
+  if (windSpeed < 15) {
+    score += 10
+    factors.push({ name: 'Wind', value: `${windSpeed.toFixed(0)} km/h`, detail: 'Calm — suitable', good: true, pts: 10 })
+  } else if (windSpeed < 25) {
+    score += 5
+    factors.push({ name: 'Wind', value: `${windSpeed.toFixed(0)} km/h`, detail: 'Moderate wind', good: true, pts: 5 })
+  } else {
+    factors.push({ name: 'Wind', value: `${windSpeed.toFixed(0)} km/h`, detail: 'High — risk for seedlings', good: false, pts: 0 })
+  }
+
+  // Sunlight proxy from cloud cover (0-10)
+  const sunPts = crop.waterNeed === 'High' ? (clouds > 30 ? 10 : 6) : (clouds < 50 ? 10 : 5)
+  score += sunPts
+  factors.push({ name: 'Sunlight', value: `${100 - clouds}% clear`, detail: clouds < 40 ? 'Abundant' : 'Moderate', good: sunPts >= 8, pts: sunPts })
+
+  return { score: Math.min(100, score), factors }
+}
+
 function AdvisoryTab({ profile }) {
-  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Crop'
-  const stage = profile?.crop_stage ? cap(profile.crop_stage) : 'Growing'
+  const [weather, setWeather] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const advisories = [
-    { priority: 'high', title: 'Irrigation Advisory', text: `Based on soil moisture data (68%), reduce irrigation frequency for ${crop}. SAR data shows adequate moisture levels.`, time: '2 hours ago' },
-    { priority: 'medium', title: 'Pest Alert', text: `${stage} stage ${crop} crops in your region reporting increased pest activity. Monitor closely.`, time: '6 hours ago' },
-    { priority: 'low', title: 'Fertilizer Timing', text: `Optimal window for nitrogen application begins in 3 days based on your crop stage and weather forecast.`, time: '1 day ago' },
-    { priority: 'info', title: 'Government Scheme', text: 'PM-KISAN installment disbursement scheduled for next week. Ensure Aadhaar linkage is updated.', time: '2 days ago' },
-  ]
+  useEffect(() => {
+    const fetchWeather = async () => {
+      const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
+      if (!API_KEY) { setLoading(false); return }
+      try {
+        const lat = profile?.latitude, lon = profile?.longitude
+        const params = lat && lon
+          ? `lat=${lat}&lon=${lon}`
+          : `q=${encodeURIComponent(profile?.village || profile?.district || 'Ahmedabad')},IN`
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?${params}&appid=${API_KEY}&units=metric`)
+        if (res.ok) setWeather(await res.json())
+      } catch { /* silent */ }
+      finally { setLoading(false) }
+    }
+    fetchWeather()
+  }, [profile?.latitude, profile?.longitude, profile?.village, profile?.district])
 
-  const colors = {
-    high: 'border-red-300 bg-red-50',
-    medium: 'border-amber-300 bg-amber-50',
-    low: 'border-blue-300 bg-blue-50',
-    info: 'border-stone-300 bg-stone-50',
-  }
+  const season = getCurrentSeason()
+  const seasonLabel = { kharif: 'Kharif (Jun–Oct)', rabi: 'Rabi (Nov–Mar)', zaid: 'Zaid (Mar–Jun)' }
 
-  const dots = {
-    high: 'bg-red-500',
-    medium: 'bg-amber-500',
-    low: 'bg-blue-500',
-    info: 'bg-stone-400',
-  }
+  // Score all crops and sort
+  const scoredCrops = CROP_DATABASE.map(c => ({
+    ...c,
+    ...computeCropSuitability(c, weather, season),
+  })).sort((a, b) => b.score - a.score)
+
+  const topCrops = scoredCrops.filter(c => c.score >= 60)
+  const otherCrops = scoredCrops.filter(c => c.score < 60)
+  const farmerCrop = profile?.primary_crop || ''
+  const farmerCropData = scoredCrops.find(c => c.name.toLowerCase() === farmerCrop.toLowerCase())
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-32 animate-fade-in">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-stone-600 font-semibold">Analyzing crop suitability...</p>
+        <p className="text-stone-400 text-sm mt-1">Fetching weather data for your location</p>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6 max-w-6xl animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-800">Crop Advisory</h2>
-        <span className="text-xs text-stone-400">{crop} — {stage} stage</span>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-stone-800">AI Crop Advisory</h2>
+          <p className="text-xs text-stone-400">Real-time crop recommendations based on weather, season, and location</p>
+        </div>
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-xs font-bold text-emerald-700">{seasonLabel[season]}</span>
+        </span>
       </div>
 
-      {/* Advisory hero */}
-      <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 p-6 md:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.04] rounded-full -translate-y-1/3 translate-x-1/4" />
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 p-6 md:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.05] rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-white/[0.03] rounded-full translate-y-1/2" />
         <div className="relative z-10">
-          <p className="text-emerald-200 text-sm font-medium">Personalised for your farm</p>
-          <h3 className="text-xl font-bold mt-1">AI-Powered Crop Intelligence</h3>
-          <p className="text-emerald-100/70 text-sm mt-2">
-            Advisories based on your location, crop ({crop}), growth stage ({stage}), SAR satellite data, and real-time weather.
+          <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">AI Prediction Engine</p>
+          <h3 className="text-xl font-bold mt-2">What should you grow right now?</h3>
+          <p className="text-emerald-100/70 text-sm mt-2 max-w-xl">
+            We analyzed <span className="text-white font-semibold">live weather</span> ({weather?.main?.temp?.toFixed(0) ?? '—'}°C, {weather?.main?.humidity ?? '—'}% humidity),
+            current <span className="text-white font-semibold">{cap(season)} season</span>,
+            and your location ({weather?.name || profile?.village || 'Gujarat'}) to score {CROP_DATABASE.length} crops for suitability.
           </p>
+          <div className="flex gap-4 mt-4 text-emerald-200/80 text-sm">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-emerald-300 rounded-full" /> {topCrops.length} crops recommended</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-amber-300 rounded-full" /> {otherCrops.length} not ideal now</span>
+          </div>
         </div>
       </div>
 
-      {/* Advisories */}
-      <div className="space-y-3">
-        {advisories.map((a, i) => (
-          <div key={i} className={`rounded-xl border-l-4 p-4 ${colors[a.priority]} hover-lift`}>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${dots[a.priority]}`} />
-              <h4 className="font-bold text-stone-800 text-sm">{a.title}</h4>
-              <span className="text-[10px] text-stone-400 ml-auto">{a.time}</span>
+      {/* Current conditions summary */}
+      {weather && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Temperature', value: `${weather.main?.temp?.toFixed(1)}°C`, icon: '🌡️' },
+            { label: 'Humidity', value: `${weather.main?.humidity}%`, icon: '💧' },
+            { label: 'Wind', value: `${((weather.wind?.speed || 0) * 3.6).toFixed(0)} km/h`, icon: '💨' },
+            { label: 'Season', value: cap(season), icon: '📅' },
+          ].map((item, idx) => (
+            <div key={idx} className="rounded-xl bg-white border border-stone-200/80 shadow-sm p-4 text-center hover-lift">
+              <span className="text-xl">{item.icon}</span>
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mt-1">{item.label}</p>
+              <p className="text-lg font-bold text-stone-800">{item.value}</p>
             </div>
-            <p className="text-sm text-stone-600 ml-4">{a.text}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Farmer's current crop assessment */}
+      {farmerCropData && (
+        <div className={`rounded-2xl border-2 p-5 ${
+          farmerCropData.score >= 70 ? 'border-emerald-300 bg-emerald-50/50' :
+          farmerCropData.score >= 40 ? 'border-amber-300 bg-amber-50/50' :
+          'border-red-300 bg-red-50/50'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{farmerCropData.icon}</span>
+              <div>
+                <p className="font-bold text-stone-800">Your Crop: {farmerCropData.name}</p>
+                <p className="text-xs text-stone-500">{profile?.crop_stage ? cap(profile.crop_stage) + ' stage' : 'Currently growing'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-2xl font-extrabold ${
+                farmerCropData.score >= 70 ? 'text-emerald-600' : farmerCropData.score >= 40 ? 'text-amber-600' : 'text-red-600'
+              }`}>{farmerCropData.score}%</p>
+              <p className="text-[10px] text-stone-400">suitability</p>
+            </div>
           </div>
-        ))}
+          <div className="h-2.5 rounded-full bg-stone-200">
+            <div className={`h-full rounded-full transition-all duration-1000 ${
+              farmerCropData.score >= 70 ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
+              farmerCropData.score >= 40 ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+              'bg-gradient-to-r from-red-400 to-red-600'
+            }`} style={{ width: `${farmerCropData.score}%` }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3">
+            {farmerCropData.factors.map((f, fi) => (
+              <div key={fi} className="text-center">
+                <p className={`text-xs font-bold ${f.good ? 'text-emerald-600' : 'text-amber-600'}`}>{f.pts}pt</p>
+                <p className="text-[10px] text-stone-500">{f.name}</p>
+                <p className="text-[9px] text-stone-400">{f.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recommended crops */}
+      <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-stone-800">Recommended Crops for Your Farm</h3>
+            <p className="text-xs text-stone-400 mt-0.5">Ranked by AI suitability score — based on weather, season, and soil conditions</p>
+          </div>
+          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">{topCrops.length} crops</span>
+        </div>
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {topCrops.map((c, ci) => {
+            const isTop = ci === 0
+            return (
+              <div key={ci} className={`rounded-xl border overflow-hidden hover-lift transition-all ${
+                isTop ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-stone-200'
+              }`}>
+                <div className={`h-1.5 bg-gradient-to-r ${c.gradient}`} />
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{c.icon}</span>
+                      <div>
+                        <p className="font-bold text-stone-800 text-sm flex items-center gap-1.5">
+                          {c.name}
+                          {isTop && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">TOP PICK</span>}
+                        </p>
+                        <p className="text-[10px] text-stone-400">{cap(c.season)} &middot; {c.duration}</p>
+                      </div>
+                    </div>
+                    <div className={`text-lg font-extrabold ${
+                      c.score >= 80 ? 'text-emerald-600' : c.score >= 60 ? 'text-teal-600' : 'text-amber-600'
+                    }`}>{c.score}%</div>
+                  </div>
+                  {/* Score bar */}
+                  <div className="h-1.5 rounded-full bg-stone-100 mb-3">
+                    <div className={`h-full rounded-full bg-gradient-to-r ${c.gradient} transition-all duration-1000`} style={{ width: `${c.score}%` }} />
+                  </div>
+                  {/* Factor pills */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {c.factors.map((f, fi) => (
+                      <span key={fi} className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                        f.good ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}>{f.name}: {f.value}</span>
+                    ))}
+                  </div>
+                  {/* Details */}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                    <div className="flex justify-between"><span className="text-stone-400">Water</span><span className="font-semibold text-stone-600">{c.waterNeed}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">Soil</span><span className="font-semibold text-stone-600">{c.soilType}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">MSP</span><span className="font-semibold text-stone-600">{c.msp}</span></div>
+                    <div className="flex justify-between"><span className="text-stone-400">Duration</span><span className="font-semibold text-stone-600">{c.duration}</span></div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Not recommended right now */}
+      {otherCrops.length > 0 && (
+        <div className="rounded-2xl bg-white border border-stone-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-stone-100">
+            <h3 className="font-bold text-stone-800">Not Ideal Right Now</h3>
+            <p className="text-xs text-stone-400 mt-0.5">These crops score below 60% suitability for current conditions</p>
+          </div>
+          <div className="divide-y divide-stone-100">
+            {otherCrops.map((c, ci) => (
+              <div key={ci} className="px-6 py-3 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{c.icon}</span>
+                  <div>
+                    <p className="font-semibold text-stone-700 text-sm">{c.name}</p>
+                    <p className="text-[10px] text-stone-400">{cap(c.season)} crop &middot; {c.duration}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-1.5 rounded-full bg-stone-100">
+                    <div className="h-full rounded-full bg-gradient-to-r from-stone-300 to-stone-400 transition-all duration-700" style={{ width: `${c.score}%` }} />
+                  </div>
+                  <span className="text-sm font-bold text-stone-400 w-10 text-right">{c.score}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Seasonal planting guide */}
+      <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-5">
+        <h4 className="font-bold text-stone-800 text-sm mb-3">How AI scores are calculated</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs text-stone-600">
+          <div className="flex gap-2"><span className="text-emerald-600 font-extrabold shrink-0">30pt</span><span>Temperature match — is current temp in the crop's optimal range?</span></div>
+          <div className="flex gap-2"><span className="text-emerald-600 font-extrabold shrink-0">20pt</span><span>Humidity match — current humidity vs crop's ideal range</span></div>
+          <div className="flex gap-2"><span className="text-emerald-600 font-extrabold shrink-0">30pt</span><span>Season alignment — is this the right season for this crop?</span></div>
+          <div className="flex gap-2"><span className="text-emerald-600 font-extrabold shrink-0">10pt</span><span>Wind conditions — calm winds better for sowing and spraying</span></div>
+          <div className="flex gap-2"><span className="text-emerald-600 font-extrabold shrink-0">10pt</span><span>Sunlight — cloud cover vs crop's light requirements</span></div>
+        </div>
       </div>
     </div>
   )
