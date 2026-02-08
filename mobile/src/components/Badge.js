@@ -1,7 +1,6 @@
 import React from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { colors } from '../theme'
-import TranslatedText from '../translation/TranslatedText'
 
 export default function Badge({ label, tone = 'muted' }) {
   const style =
@@ -13,7 +12,7 @@ export default function Badge({ label, tone = 'muted' }) {
 
   return (
     <View style={[styles.badge, { backgroundColor: style.backgroundColor }]}>
-      <TranslatedText style={[styles.text, { color: style.color }]} text={label} />
+      <Text style={[styles.text, { color: style.color }]}>{label}</Text>
     </View>
   )
 }

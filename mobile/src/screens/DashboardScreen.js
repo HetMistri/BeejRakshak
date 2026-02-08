@@ -8,14 +8,11 @@ import Badge from '../components/Badge'
 import { useAuth } from '../context/AuthContext'
 import { fetchRegistration } from '../lib/registration'
 import { config } from '../lib/config'
-import LanguageMenu from '../translation/LanguageMenu'
-import TranslatedText, { useTranslatedText } from '../translation/TranslatedText'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'mandi', label: 'Mandi' },
   { id: 'advisory', label: 'Advisory' },
-  { id: 'calendar', label: 'Calendar' },
   { id: 'alerts', label: 'Alerts' },
 ]
 
@@ -217,7 +214,7 @@ export default function DashboardScreen() {
         <View style={styles.tabsRow}>
           {TABS.map((t) => (
             <TouchableOpacity key={t.id} onPress={() => setTab(t.id)} style={[styles.tabPill, tab === t.id && styles.tabPillActive]}>
-              <TranslatedText style={[styles.tabLabel, tab === t.id && styles.tabLabelActive]} text={t.label} />
+              <Text style={[styles.tabLabel, tab === t.id && styles.tabLabelActive]}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -252,11 +249,6 @@ export default function DashboardScreen() {
             forecastDays={forecastDays}
           />
         )}
-        {tab === 'calendar' && (
-          <CalendarTab
-            profile={profile}
-          />
-        )}
         {tab === 'alerts' && (
           <AlertsTab
             profile={profile}
@@ -278,26 +270,22 @@ function Header() {
         </View>
         <View>
           <Text style={styles.title}>BeejRakshak</Text>
-          <TranslatedText style={styles.subtitle} text="AgriTech Intelligence" />
+          <Text style={styles.subtitle}>AgriTech Intelligence</Text>
         </View>
       </View>
-      <View style={styles.headerActions}>
-        <LanguageMenu compact />
-        <View style={styles.profile}>
-          <Text style={styles.profileText}>HM</Text>
-        </View>
+      <View style={styles.profile}>
+        <Text style={styles.profileText}>HM</Text>
       </View>
     </View>
   )
 }
 
 function SearchBar() {
-  const placeholder = useTranslatedText('Search mandis, alerts, advisories')
   return (
     <View style={styles.searchWrap}>
       <TextInput
         style={styles.search}
-        placeholder={placeholder}
+        placeholder="Search mandis, alerts, advisories"
         placeholderTextColor="#7FB69B"
       />
     </View>
@@ -325,7 +313,7 @@ function OverviewTab({ profile, weather, forecastDays, recommendation, weatherLo
         {weatherLoading ? (
           <View style={styles.inlineLoader}>
             <ActivityIndicator color={colors.accent} />
-            <TranslatedText style={styles.inlineLoaderText} text="Loading weather..." />
+            <Text style={styles.inlineLoaderText}>Loading weather...</Text>
           </View>
         ) : (
           <WeatherRow days={forecastDays} />
@@ -345,10 +333,10 @@ function MandiTab({ profile, mandisList, availableCrops, selectedCrop, setSelect
         {loading ? (
           <View style={styles.inlineLoader}>
             <ActivityIndicator color={colors.accent} />
-            <TranslatedText style={styles.inlineLoaderText} text="Fetching recommendations..." />
+            <Text style={styles.inlineLoaderText}>Fetching recommendations...</Text>
           </View>
         ) : error ? (
-          <TranslatedText style={styles.errorText} text={online === false ? 'Mandi API offline.' : error} />
+          <Text style={styles.errorText}>{online === false ? 'Mandi API offline.' : error}</Text>
         ) : (
           <MandiCard best={best} quantity={quantity} />
         )}
@@ -381,30 +369,20 @@ function MandiTab({ profile, mandisList, availableCrops, selectedCrop, setSelect
   )
 }
 
-function AdvisoryTab({ profile, weather }) {
+function AdvisoryTab({ profile, weather, forecastDays }) {
   const locationName = weather?.name || profile?.village || profile?.district || 'your area'
   const temp = weather?.main?.temp
-  const humidity = weather?.main?.humidity
-  const clouds = weather?.clouds?.all
   const wind = weather?.wind?.speed ? (weather.wind.speed * 3.6) : null
-  const season = getCurrentSeason()
-
   const advisoryText = temp
     ? `Current ${temp.toFixed(1)}°C in ${locationName}. ${temp > 32 ? 'Avoid midday spray.' : 'Good window for field tasks.'}`
     : 'Weather insights will appear once data is available.'
-
-  const suitability = computeCropSuitabilitySummary({ temp, humidity, clouds, season })
-  const recommended = suitability.filter((c) => c.score >= 60)
-  const other = suitability.filter((c) => c.score < 60)
-  const farmerCrop = profile?.primary_crop ? profile.primary_crop.toLowerCase() : ''
-  const farmerCropData = suitability.find((c) => c.name.toLowerCase() === farmerCrop)
 
   return (
     <View>
       <Section title="Weekly Guidance" subtitle="Actionable advice" action="">
         <View style={styles.advisoryCard}>
-          <TranslatedText style={styles.cardTitle} text="Field Tasks" />
-          <TranslatedText style={styles.advisoryText} text={advisoryText} />
+          <Text style={styles.cardTitle}>Field Tasks</Text>
+          <Text style={styles.advisoryText}>{advisoryText}</Text>
           <View style={styles.pillRow}>
             <Badge label="Irrigation" tone="accent" />
             <Badge label="Spray" tone={wind && wind > 15 ? 'warn' : 'muted'} />
@@ -412,232 +390,11 @@ function AdvisoryTab({ profile, weather }) {
           </View>
         </View>
       </Section>
-
-      {farmerCropData && (
-        <Section title="Your Crop" subtitle={`${cap(farmerCropData.season)} crop · ${farmerCropData.duration}`} action="">
-          <View style={styles.mandiMini}>
-            <TranslatedText style={styles.mandiName} text={farmerCropData.name} />
-            <TranslatedText style={styles.mandiMeta} text={`Suitability: ${farmerCropData.score}%`} />
-            <View style={styles.pillRow}>
-              {farmerCropData.score >= 70 && <Badge label="Great fit" tone="accent" />}
-              {farmerCropData.score < 70 && farmerCropData.score >= 40 && <Badge label="Monitor" tone="warn" />}
-              {farmerCropData.score < 40 && <Badge label="Risky" tone="muted" />}
-            </View>
-          </View>
-        </Section>
-      )}
-
-      <Section title="Recommended Crops" subtitle={`Based on ${locationName} weather`}>
+      <Section title="Recommended Crops" subtitle="Based on this week">
         <View style={styles.pillRow}>
-          {(recommended.length ? recommended : suitability).slice(0, 3).map((crop) => (
-            <Badge key={crop.name} label={crop.name} tone={crop.score >= 70 ? 'accent' : 'muted'} />
-          ))}
-        </View>
-      </Section>
-
-      {other.length > 0 && (
-        <Section title="Not Ideal Now" subtitle="Lower suitability this week" action="">
-          <View style={styles.pillRow}>
-            {other.map((crop) => (
-              <Badge key={crop.name} label={crop.name} tone="muted" />
-            ))}
-          </View>
-        </Section>
-      )}
-    </View>
-  )
-}
-
-function CalendarTab({ profile }) {
-  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Onion'
-  const stage = profile?.crop_stage ? cap(profile.crop_stage) : 'Vegetative'
-
-  const today = new Date()
-  const monthName = today.toLocaleString('default', { month: 'long' })
-  const year = today.getFullYear()
-  const daysInMonth = new Date(year, today.getMonth() + 1, 0).getDate()
-  const firstDay = new Date(year, today.getMonth(), 1).getDay()
-
-  const events = {}
-  const addEvent = (offset, data) => {
-    const day = today.getDate() + offset
-    if (day >= 1 && day <= daysInMonth) events[day] = data
-  }
-
-  addEvent(0, { type: 'today', label: 'Today', color: '#34D399' })
-  addEvent(2, { type: 'irrigation', label: 'Irrigation', color: '#3B82F6' })
-  addEvent(4, { type: 'fertilizer', label: 'Fertilizer', color: '#10B981' })
-  addEvent(7, { type: 'pest', label: 'Pest Spray', color: '#F59E0B' })
-  addEvent(12, { type: 'harvest', label: 'Harvest Check', color: '#F97316' })
-  addEvent(15, { type: 'mandi', label: 'Mandi Visit', color: '#8B5CF6' })
-
-  const upcoming = [
-    {
-      date: `${monthName} ${today.getDate() + 2}`,
-      title: 'Scheduled Irrigation',
-      desc: 'SAR data shows soil moisture dropping to 32%. Irrigate before it reaches critical 25% threshold.',
-      icon: '💧',
-      color: '#3B82F6',
-    },
-    {
-      date: `${monthName} ${today.getDate() + 4}`,
-      title: 'Nitrogen Application',
-      desc: `${crop} in ${stage} stage needs nitrogen boost. Weather window is clear for next 3 days.`,
-      icon: '🧪',
-      color: '#10B981',
-    },
-    {
-      date: `${monthName} ${today.getDate() + 7}`,
-      title: 'Preventive Pest Spray',
-      desc: 'Humidity forecast 82% this week. Apply preventive spray to avoid fungal infection.',
-      icon: '🛡️',
-      color: '#F59E0B',
-    },
-    {
-      date: `${monthName} ${today.getDate() + 12}`,
-      title: 'Pre-Harvest Assessment',
-      desc: 'NDVI plateau detected. Conduct field inspection to confirm harvest readiness.',
-      icon: '🌾',
-      color: '#F97316',
-    },
-    {
-      date: `${monthName} ${today.getDate() + 15}`,
-      title: 'Mandi Price Window',
-      desc: `${crop} prices trending up. Optimal selling window projected for this period.`,
-      icon: '📊',
-      color: '#8B5CF6',
-    },
-  ].filter((t) => Number(t.date.split(' ')[1]) <= daysInMonth)
-
-  const seasons = [
-    {
-      name: 'Kharif',
-      months: 'Jun - Oct',
-      crops: 'Tomato',
-      active: today.getMonth() >= 5 && today.getMonth() <= 9,
-    },
-    {
-      name: 'Rabi',
-      months: 'Nov - Mar',
-      crops: 'Onion, Potato',
-      active: today.getMonth() >= 10 || today.getMonth() <= 2,
-    },
-    {
-      name: 'Zaid',
-      months: 'Mar - Jun',
-      crops: 'Tomato',
-      active: today.getMonth() >= 2 && today.getMonth() <= 5,
-    },
-  ]
-
-  const legend = [
-    { label: 'Irrigation', color: '#3B82F6' },
-    { label: 'Fertilizer', color: '#10B981' },
-    { label: 'Pest', color: '#F59E0B' },
-    { label: 'Harvest', color: '#F97316' },
-  ]
-
-  return (
-    <View>
-      <Section title="Adaptive Calendar" subtitle={`${crop} · ${stage} stage`} action="">
-        <View style={styles.calendarHero}>
-          <TranslatedText style={styles.heroEyebrow} text="AI-Powered Scheduling" />
-          <TranslatedText style={styles.heroTitle} text="Farm calendar that adapts to your crop, weather, and satellite data" />
-          <TranslatedText
-            style={styles.heroBody}
-            text="Every task is auto-scheduled based on SAR moisture, weather forecasts, crop stage, and market trends. The calendar updates itself — you just follow it."
-          />
-        </View>
-      </Section>
-
-      <Section title={`${monthName} ${year}`} subtitle="Auto-scheduled tasks" action="">
-        <View style={styles.calendarLegend}>
-          {legend.map((l) => (
-            <View key={l.label} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: l.color }]} />
-              <TranslatedText style={styles.legendLabel} text={l.label} />
-            </View>
-          ))}
-        </View>
-        <View style={styles.calendarHeaderRow}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <View key={d} style={styles.calendarHeaderCell}>
-              <TranslatedText style={styles.calendarHeaderText} text={d} />
-            </View>
-          ))}
-        </View>
-        <View style={styles.calendarGrid}>
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <View key={`empty-${i}`} style={[styles.calendarCell, styles.calendarCellEmpty]} />
-          ))}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1
-            const ev = events[day]
-            const isToday = day === today.getDate()
-            return (
-              <View
-                key={day}
-                style={[
-                  styles.calendarCell,
-                  isToday && styles.calendarCellToday,
-                  !isToday && ev && styles.calendarCellEvent,
-                ]}
-              >
-                <TranslatedText style={[styles.calendarCellText, isToday && styles.calendarCellTextToday]} text={`${day}`} />
-                {ev && !isToday ? <View style={[styles.calendarDot, { backgroundColor: ev.color }]} /> : null}
-              </View>
-            )
-          })}
-        </View>
-      </Section>
-
-      <Section title="Crop Seasons" subtitle="Seasonal windows" action="">
-        <View style={styles.seasonList}>
-          {seasons.map((s) => (
-            <View key={s.name} style={[styles.seasonItem, s.active && styles.seasonItemActive]}>
-              <View style={[styles.seasonDot, s.active && styles.seasonDotActive]} />
-              <View>
-                <TranslatedText style={styles.seasonTitle} text={`${s.name} (${s.months})`} />
-                <TranslatedText style={styles.seasonMeta} text={s.crops} />
-              </View>
-            </View>
-          ))}
-        </View>
-      </Section>
-
-      <Section title="How it adapts" subtitle="Signals used" action="">
-        <View style={styles.adaptList}>
-          {[
-            'Reads SAR moisture + NDVI daily',
-            'Checks 7-day weather forecast',
-            'Matches crop stage requirements',
-            'Reschedules tasks automatically',
-          ].map((item, idx) => (
-            <View key={item} style={styles.adaptItem}>
-              <TranslatedText style={styles.adaptIndex} text={`${idx + 1}.`} />
-              <TranslatedText style={styles.adaptText} text={item} />
-            </View>
-          ))}
-        </View>
-      </Section>
-
-      <Section title="Upcoming Farm Tasks" subtitle="Auto-generated based on your crop, weather, and satellite data" action="">
-        <View style={styles.upcomingList}>
-          {upcoming.map((t) => (
-            <View key={`${t.title}-${t.date}`} style={styles.upcomingItem}>
-              <View style={[styles.upcomingBar, { backgroundColor: t.color }]} />
-              <View style={styles.upcomingContent}>
-                <View style={styles.upcomingHeader}>
-                  <Text style={styles.upcomingIcon}>{t.icon}</Text>
-                  <View>
-                    <TranslatedText style={styles.upcomingTitle} text={t.title} />
-                    <TranslatedText style={styles.upcomingDate} text={t.date} />
-                  </View>
-                </View>
-                <TranslatedText style={styles.upcomingDesc} text={t.desc} />
-              </View>
-            </View>
-          ))}
+          <Badge label="Onion" tone="accent" />
+          <Badge label="Tomato" />
+          <Badge label="Potato" />
         </View>
       </Section>
     </View>
@@ -671,9 +428,9 @@ function MandiCard({ best, quantity = 1000 }) {
     return (
       <View style={styles.mandiCard}>
         <View>
-          <TranslatedText style={styles.cardTitle} text="Best Mandi Today" />
-          <TranslatedText style={styles.cardValue} text="Loading..." />
-          <TranslatedText style={styles.cardMeta} text="Fetching latest recommendation" />
+          <Text style={styles.cardTitle}>Best Mandi Today</Text>
+          <Text style={styles.cardValue}>Loading...</Text>
+          <Text style={styles.cardMeta}>Fetching latest recommendation</Text>
         </View>
       </View>
     )
@@ -685,9 +442,9 @@ function MandiCard({ best, quantity = 1000 }) {
   return (
     <View style={styles.mandiCard}>
       <View>
-        <TranslatedText style={styles.cardTitle} text={best.mandi_name} />
-        <TranslatedText style={styles.cardValue} text={price} />
-        <TranslatedText style={styles.cardMeta} text={`${best.distance_km?.toFixed?.(0) || '?'} km · ${net} · ${quantity} kg`} />
+        <Text style={styles.cardTitle}>{best.mandi_name}</Text>
+        <Text style={styles.cardValue}>{price}</Text>
+        <Text style={styles.cardMeta}>{best.distance_km?.toFixed?.(0) || '?'} km · {net} · {quantity} kg</Text>
       </View>
       <View style={styles.mandiBadge}>
         <Text style={styles.mandiBadgeText}>ML</Text>
@@ -718,9 +475,9 @@ function WeatherRow({ days = [] }) {
 function WeatherCard({ day, temp, status }) {
   return (
     <View style={styles.weatherCard}>
-      <TranslatedText style={styles.weatherDay} text={day} />
-      <TranslatedText style={styles.weatherTemp} text={temp} />
-      <TranslatedText style={styles.weatherStatus} text={status} />
+      <Text style={styles.weatherDay}>{day}</Text>
+      <Text style={styles.weatherTemp}>{temp}</Text>
+      <Text style={styles.weatherStatus}>{status}</Text>
     </View>
   )
 }
@@ -736,10 +493,10 @@ function AlertItem({ label, status, tone, detail }) {
   return (
     <View style={[styles.alertItem, { borderColor: toneStyle.borderColor, backgroundColor: toneStyle.backgroundColor }]}> 
       <View>
-        <TranslatedText style={styles.alertLabel} text={label} />
-        <TranslatedText style={styles.alertDetail} text={detail} />
+        <Text style={styles.alertLabel}>{label}</Text>
+        <Text style={styles.alertDetail}>{detail}</Text>
       </View>
-      <TranslatedText style={[styles.alertStatus, { color: toneStyle.color }]} text={status} />
+      <Text style={[styles.alertStatus, { color: toneStyle.color }]}>{status}</Text>
     </View>
   )
 }
@@ -773,45 +530,11 @@ function forecastDaysFromWeather(current) {
   return Boolean(current)
 }
 
-function getCurrentSeason() {
-  const m = new Date().getMonth()
-  if (m >= 5 && m <= 9) return 'kharif'
-  if (m >= 10 || m <= 2) return 'rabi'
-  return 'zaid'
-}
-
-function computeCropSuitabilitySummary({ temp, humidity, clouds, season }) {
-  const t = typeof temp === 'number' ? temp : 26
-  const h = typeof humidity === 'number' ? humidity : 60
-  const c = typeof clouds === 'number' ? clouds : 30
-
-  return CROP_DATABASE.map((crop) => {
-    const [tMin, tMax] = crop.tempRange
-    const [hMin, hMax] = crop.humRange
-    let score = 0
-
-    const tempScore = t >= tMin && t <= tMax ? 30 : Math.max(0, 20 - Math.abs(t - (tMin + tMax) / 2))
-    const humScore = h >= hMin && h <= hMax ? 20 : Math.max(0, 15 - Math.abs(h - (hMin + hMax) / 2) / 2)
-    const seasonScore = crop.season === season ? 30 : 15
-    const sunScore = crop.waterNeed === 'High' ? (c > 40 ? 6 : 10) : (c < 50 ? 10 : 6)
-
-    score = Math.round(tempScore + humScore + seasonScore + sunScore)
-    return { ...crop, score }
-  }).sort((a, b) => b.score - a.score)
-}
-
-const CROP_DATABASE = [
-  { name: 'Onion', season: 'rabi', tempRange: [13, 30], humRange: [40, 70], waterNeed: 'Medium', duration: '120-150 days' },
-  { name: 'Tomato', season: 'zaid', tempRange: [18, 35], humRange: [40, 70], waterNeed: 'Medium', duration: '60-90 days' },
-  { name: 'Potato', season: 'rabi', tempRange: [10, 25], humRange: [40, 70], waterNeed: 'Medium', duration: '80-120 days' },
-]
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   container: { padding: 20, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: {
     width: 44,
     height: 44,
@@ -875,72 +598,4 @@ const styles = StyleSheet.create({
   mandiName: { color: colors.text, fontSize: 13, fontWeight: '600' },
   mandiMeta: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   mandiTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  calendarHero: {
-    borderRadius: 16,
-    padding: 16,
-    backgroundColor: '#3B1F5C',
-    borderWidth: 1,
-    borderColor: '#4C2A75',
-  },
-  heroEyebrow: { color: '#C7B6F2', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
-  heroTitle: { color: '#F5F3FF', fontSize: 16, fontWeight: '800', marginTop: 8 },
-  heroBody: { color: '#DAD3FF', fontSize: 12, marginTop: 6, lineHeight: 16 },
-  calendarLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { color: colors.textMuted, fontSize: 11 },
-  calendarHeaderRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarHeaderCell: { width: '14.28%', paddingVertical: 6, alignItems: 'center' },
-  calendarHeaderText: { color: colors.textMuted, fontSize: 11, fontWeight: '700' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell: {
-    width: '14.28%',
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    marginVertical: 4,
-  },
-  calendarCellEmpty: { backgroundColor: 'transparent' },
-  calendarCellToday: { backgroundColor: colors.accentDark, borderWidth: 1, borderColor: '#3ECF9B' },
-  calendarCellEvent: { backgroundColor: colors.cardLight, borderWidth: 1, borderColor: colors.border },
-  calendarCellText: { color: colors.textMuted, fontSize: 12 },
-  calendarCellTextToday: { color: colors.text, fontWeight: '700' },
-  calendarDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
-  seasonList: { gap: 10 },
-  seasonItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: colors.cardLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  seasonItemActive: { borderColor: colors.accent, backgroundColor: '#123326' },
-  seasonDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#4B5563' },
-  seasonDotActive: { backgroundColor: colors.accent },
-  seasonTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
-  seasonMeta: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  adaptList: { gap: 10 },
-  adaptItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  adaptIndex: { color: colors.accent, fontWeight: '700', width: 18 },
-  adaptText: { color: colors.textMuted, fontSize: 12, flex: 1 },
-  upcomingList: { gap: 10 },
-  upcomingItem: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  upcomingBar: { width: 4 },
-  upcomingContent: { flex: 1, padding: 12 },
-  upcomingHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  upcomingIcon: { fontSize: 18 },
-  upcomingTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
-  upcomingDate: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
-  upcomingDesc: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
 })
