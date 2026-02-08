@@ -1,12 +1,13 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { colors } from '../theme'
+import TranslatedText from '../translation/TranslatedText'
 
 export default function StatCard({ label, value, accent }) {
   return (
     <View style={[styles.card, accent && { borderColor: colors.accent }]}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <TranslatedText style={styles.label} text={label} />
+      <TranslatedText style={styles.value} text={value} />
     </View>
   )
 }

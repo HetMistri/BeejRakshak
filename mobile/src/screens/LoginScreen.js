@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing } from '../theme'
 import { supabase, setLocalSession } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import LanguageMenu from '../translation/LanguageMenu'
+import TranslatedText, { useTranslatedText } from '../translation/TranslatedText'
 
 export default function LoginScreen({ navigation }) {
   const [mode, setMode] = useState('login')
@@ -12,6 +14,8 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { refresh } = useAuth()
+  const namePlaceholder = useTranslatedText('Enter your name')
+  const mobilePlaceholder = useTranslatedText('10-digit mobile number')
 
   const mobileOnly = (v) => v.replace(/\D/g, '').slice(0, 10)
 
@@ -54,12 +58,15 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <LinearGradient colors={['#0A1A12', '#0B1F16', '#0A1A12']} style={styles.gradient}>
+        <View style={styles.topRow}>
+          <LanguageMenu compact />
+        </View>
         <View style={styles.logoWrap}>
           <View style={styles.logo}>
             <Text style={styles.logoText}>BR</Text>
           </View>
           <Text style={styles.title}>BeejRakshak</Text>
-          <Text style={styles.subtitle}>Seed Protection Intelligence Platform</Text>
+          <TranslatedText style={styles.subtitle} text="Seed Protection Intelligence Platform" />
         </View>
 
         <View style={styles.card}>
@@ -68,23 +75,23 @@ export default function LoginScreen({ navigation }) {
               style={[styles.tab, mode === 'login' && styles.tabActive]}
               onPress={() => setMode('login')}
             >
-              <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>Sign in</Text>
+              <TranslatedText style={[styles.tabText, mode === 'login' && styles.tabTextActive]} text="Sign in" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, mode === 'signup' && styles.tabActive]}
               onPress={() => setMode('signup')}
             >
-              <Text style={[styles.tabText, mode === 'signup' && styles.tabTextActive]}>Create account</Text>
+              <TranslatedText style={[styles.tabText, mode === 'signup' && styles.tabTextActive]} text="Create account" />
             </TouchableOpacity>
           </View>
 
           {mode === 'signup' && (
             <View style={styles.field}>
-              <Text style={styles.label}>Your name</Text>
+              <TranslatedText style={styles.label} text="Your name" />
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter your name"
+                placeholder={namePlaceholder}
                 placeholderTextColor="#7FB69B"
                 style={styles.input}
               />
@@ -92,18 +99,18 @@ export default function LoginScreen({ navigation }) {
           )}
 
           <View style={styles.field}>
-            <Text style={styles.label}>Mobile number</Text>
+            <TranslatedText style={styles.label} text="Mobile number" />
               <TextInput
                 value={mobile}
                 onChangeText={(v) => setMobile(mobileOnly(v))}
-              placeholder="10-digit mobile number"
+              placeholder={mobilePlaceholder}
               keyboardType="number-pad"
               placeholderTextColor="#7FB69B"
               style={styles.input}
             />
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <TranslatedText style={styles.error} text={error} /> : null}
 
           <TouchableOpacity
             style={styles.button}
@@ -113,12 +120,12 @@ export default function LoginScreen({ navigation }) {
             {loading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.buttonText}>{mode === 'signup' ? 'Create account' : 'Sign in'}</Text>
+              <TranslatedText style={styles.buttonText} text={mode === 'signup' ? 'Create account' : 'Sign in'} />
             )}
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>Satellite-powered AgriTech for Indian farmers</Text>
+        <TranslatedText style={styles.footer} text="Satellite-powered AgriTech for Indian farmers" />
       </LinearGradient>
     </SafeAreaView>
   )
@@ -127,6 +134,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   gradient: { flex: 1, padding: spacing.xl, justifyContent: 'center' },
+  topRow: { alignItems: 'flex-end', marginBottom: spacing.sm },
   logoWrap: { alignItems: 'center', marginBottom: spacing.lg },
   logo: {
     width: 64,

@@ -4,6 +4,8 @@ import * as Location from 'expo-location'
 import { colors, spacing } from '../theme'
 import { saveRegistration } from '../lib/registration'
 import { useAuth } from '../context/AuthContext'
+import LanguageMenu from '../translation/LanguageMenu'
+import TranslatedText, { useTranslatedText } from '../translation/TranslatedText'
 
 const CROPS = [
   { value: 'onion', label: 'Onion' },
@@ -34,6 +36,11 @@ export default function RegistrationScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const { session, refresh } = useAuth()
+  const namePlaceholder = useTranslatedText('Full name')
+  const villagePlaceholder = useTranslatedText('Village')
+  const districtPlaceholder = useTranslatedText('District')
+  const statePlaceholder = useTranslatedText('State')
+  const landPlaceholder = useTranslatedText('E.g. 2.5')
 
   function update(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -97,23 +104,26 @@ export default function RegistrationScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Registration</Text>
-        <Text style={styles.subtitle}>Tell us about your farm to personalize insights.</Text>
+        <View style={styles.topRow}>
+          <LanguageMenu compact />
+        </View>
+        <TranslatedText style={styles.title} text="Registration" />
+        <TranslatedText style={styles.subtitle} text="Tell us about your farm to personalize insights." />
 
         <Field label="Farmer name">
-          <TextInput style={styles.input} placeholder="Full name" placeholderTextColor={colors.inkMuted} value={form.name} onChangeText={(v) => update('name', v)} />
+          <TextInput style={styles.input} placeholder={namePlaceholder} placeholderTextColor={colors.inkMuted} value={form.name} onChangeText={(v) => update('name', v)} />
         </Field>
 
         <Field label="Village">
-          <TextInput style={styles.input} placeholder="Village" placeholderTextColor={colors.inkMuted} value={form.village} onChangeText={(v) => update('village', v)} />
+          <TextInput style={styles.input} placeholder={villagePlaceholder} placeholderTextColor={colors.inkMuted} value={form.village} onChangeText={(v) => update('village', v)} />
         </Field>
 
         <Field label="District">
-          <TextInput style={styles.input} placeholder="District" placeholderTextColor={colors.inkMuted} value={form.district} onChangeText={(v) => update('district', v)} />
+          <TextInput style={styles.input} placeholder={districtPlaceholder} placeholderTextColor={colors.inkMuted} value={form.district} onChangeText={(v) => update('district', v)} />
         </Field>
 
         <Field label="State">
-          <TextInput style={styles.input} placeholder="State" placeholderTextColor={colors.inkMuted} value={form.state} onChangeText={(v) => update('state', v)} />
+          <TextInput style={styles.input} placeholder={statePlaceholder} placeholderTextColor={colors.inkMuted} value={form.state} onChangeText={(v) => update('state', v)} />
         </Field>
 
         <Field label="Primary crop">
@@ -124,7 +134,7 @@ export default function RegistrationScreen() {
                 onPress={() => update('crop', c.value)}
                 style={[styles.pill, form.crop === c.value && styles.pillActive]}
               >
-                <Text style={[styles.pillText, form.crop === c.value && styles.pillTextActive]}>{c.label}</Text>
+                <TranslatedText style={[styles.pillText, form.crop === c.value && styles.pillTextActive]} text={c.label} />
               </TouchableOpacity>
             ))}
           </View>
@@ -138,7 +148,7 @@ export default function RegistrationScreen() {
                 onPress={() => update('stage', s.value)}
                 style={[styles.pill, form.stage === s.value && styles.pillActive]}
               >
-                <Text style={[styles.pillText, form.stage === s.value && styles.pillTextActive]}>{s.label}</Text>
+                <TranslatedText style={[styles.pillText, form.stage === s.value && styles.pillTextActive]} text={s.label} />
               </TouchableOpacity>
             ))}
           </View>
@@ -147,7 +157,7 @@ export default function RegistrationScreen() {
         <Field label="Land area (acres)">
           <TextInput
             style={styles.input}
-            placeholder="E.g. 2.5"
+            placeholder={landPlaceholder}
             placeholderTextColor={colors.inkMuted}
             keyboardType="decimal-pad"
             value={form.landArea}
@@ -157,17 +167,17 @@ export default function RegistrationScreen() {
 
         <Field label="GPS location">
           <TouchableOpacity style={styles.locationBtn} onPress={handleUseLocation} disabled={locating}>
-            {locating ? <ActivityIndicator color={colors.accentDark} /> : <Text style={styles.locationText}>Use current location</Text>}
+            {locating ? <ActivityIndicator color={colors.accentDark} /> : <TranslatedText style={styles.locationText} text="Use current location" />}
           </TouchableOpacity>
           {form.latitude && form.longitude ? (
             <Text style={styles.locationMeta}>Lat {form.latitude.toFixed(4)}, Lng {form.longitude.toFixed(4)}</Text>
           ) : null}
         </Field>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <TranslatedText style={styles.error} text={error} /> : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Complete registration</Text>}
+          {submitting ? <ActivityIndicator color="#ffffff" /> : <TranslatedText style={styles.buttonText} text="Complete registration" />}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -177,7 +187,7 @@ export default function RegistrationScreen() {
 function Field({ label, children }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      <TranslatedText style={styles.label} text={label} />
       {children}
     </View>
   )
@@ -186,6 +196,7 @@ function Field({ label, children }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   container: { padding: spacing.xl, paddingBottom: 40 },
+  topRow: { alignItems: 'flex-end', marginBottom: spacing.sm },
   title: { fontSize: 22, fontWeight: '800', color: colors.ink, marginBottom: 6 },
   subtitle: { color: colors.inkMuted, marginBottom: spacing.lg, fontSize: 12 },
   field: { marginBottom: spacing.md },

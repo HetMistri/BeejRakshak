@@ -1,16 +1,17 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { colors } from '../theme'
+import TranslatedText from '../translation/TranslatedText'
 
 export default function Section({ title, subtitle, action = 'View all', children }) {
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          <TranslatedText style={styles.title} text={title} />
+          {subtitle ? <TranslatedText style={styles.subtitle} text={subtitle} /> : null}
         </View>
-        {action ? <Text style={styles.action}>{action}</Text> : null}
+        {action ? <TranslatedText style={styles.action} text={action} /> : null}
       </View>
       {children}
     </View>

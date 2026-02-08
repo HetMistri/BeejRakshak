@@ -8,6 +8,8 @@ import Badge from '../components/Badge'
 import { useAuth } from '../context/AuthContext'
 import { fetchRegistration } from '../lib/registration'
 import { config } from '../lib/config'
+import LanguageMenu from '../translation/LanguageMenu'
+import TranslatedText, { useTranslatedText } from '../translation/TranslatedText'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -214,7 +216,7 @@ export default function DashboardScreen() {
         <View style={styles.tabsRow}>
           {TABS.map((t) => (
             <TouchableOpacity key={t.id} onPress={() => setTab(t.id)} style={[styles.tabPill, tab === t.id && styles.tabPillActive]}>
-              <Text style={[styles.tabLabel, tab === t.id && styles.tabLabelActive]}>{t.label}</Text>
+              <TranslatedText style={[styles.tabLabel, tab === t.id && styles.tabLabelActive]} text={t.label} />
             </TouchableOpacity>
           ))}
         </View>
@@ -270,22 +272,26 @@ function Header() {
         </View>
         <View>
           <Text style={styles.title}>BeejRakshak</Text>
-          <Text style={styles.subtitle}>AgriTech Intelligence</Text>
+          <TranslatedText style={styles.subtitle} text="AgriTech Intelligence" />
         </View>
       </View>
-      <View style={styles.profile}>
-        <Text style={styles.profileText}>HM</Text>
+      <View style={styles.headerActions}>
+        <LanguageMenu compact />
+        <View style={styles.profile}>
+          <Text style={styles.profileText}>HM</Text>
+        </View>
       </View>
     </View>
   )
 }
 
 function SearchBar() {
+  const placeholder = useTranslatedText('Search mandis, alerts, advisories')
   return (
     <View style={styles.searchWrap}>
       <TextInput
         style={styles.search}
-        placeholder="Search mandis, alerts, advisories"
+        placeholder={placeholder}
         placeholderTextColor="#7FB69B"
       />
     </View>
@@ -313,7 +319,7 @@ function OverviewTab({ profile, weather, forecastDays, recommendation, weatherLo
         {weatherLoading ? (
           <View style={styles.inlineLoader}>
             <ActivityIndicator color={colors.accent} />
-            <Text style={styles.inlineLoaderText}>Loading weather...</Text>
+            <TranslatedText style={styles.inlineLoaderText} text="Loading weather..." />
           </View>
         ) : (
           <WeatherRow days={forecastDays} />
@@ -333,10 +339,10 @@ function MandiTab({ profile, mandisList, availableCrops, selectedCrop, setSelect
         {loading ? (
           <View style={styles.inlineLoader}>
             <ActivityIndicator color={colors.accent} />
-            <Text style={styles.inlineLoaderText}>Fetching recommendations...</Text>
+            <TranslatedText style={styles.inlineLoaderText} text="Fetching recommendations..." />
           </View>
         ) : error ? (
-          <Text style={styles.errorText}>{online === false ? 'Mandi API offline.' : error}</Text>
+          <TranslatedText style={styles.errorText} text={online === false ? 'Mandi API offline.' : error} />
         ) : (
           <MandiCard best={best} quantity={quantity} />
         )}
@@ -391,8 +397,8 @@ function AdvisoryTab({ profile, weather }) {
     <View>
       <Section title="Weekly Guidance" subtitle="Actionable advice" action="">
         <View style={styles.advisoryCard}>
-          <Text style={styles.cardTitle}>Field Tasks</Text>
-          <Text style={styles.advisoryText}>{advisoryText}</Text>
+          <TranslatedText style={styles.cardTitle} text="Field Tasks" />
+          <TranslatedText style={styles.advisoryText} text={advisoryText} />
           <View style={styles.pillRow}>
             <Badge label="Irrigation" tone="accent" />
             <Badge label="Spray" tone={wind && wind > 15 ? 'warn' : 'muted'} />
@@ -404,8 +410,8 @@ function AdvisoryTab({ profile, weather }) {
       {farmerCropData && (
         <Section title="Your Crop" subtitle={`${cap(farmerCropData.season)} crop · ${farmerCropData.duration}`} action="">
           <View style={styles.mandiMini}>
-            <Text style={styles.mandiName}>{farmerCropData.name}</Text>
-            <Text style={styles.mandiMeta}>Suitability: {farmerCropData.score}%</Text>
+            <TranslatedText style={styles.mandiName} text={farmerCropData.name} />
+            <TranslatedText style={styles.mandiMeta} text={`Suitability: ${farmerCropData.score}%`} />
             <View style={styles.pillRow}>
               {farmerCropData.score >= 70 && <Badge label="Great fit" tone="accent" />}
               {farmerCropData.score < 70 && farmerCropData.score >= 40 && <Badge label="Monitor" tone="warn" />}
@@ -463,9 +469,9 @@ function MandiCard({ best, quantity = 1000 }) {
     return (
       <View style={styles.mandiCard}>
         <View>
-          <Text style={styles.cardTitle}>Best Mandi Today</Text>
-          <Text style={styles.cardValue}>Loading...</Text>
-          <Text style={styles.cardMeta}>Fetching latest recommendation</Text>
+          <TranslatedText style={styles.cardTitle} text="Best Mandi Today" />
+          <TranslatedText style={styles.cardValue} text="Loading..." />
+          <TranslatedText style={styles.cardMeta} text="Fetching latest recommendation" />
         </View>
       </View>
     )
@@ -477,9 +483,9 @@ function MandiCard({ best, quantity = 1000 }) {
   return (
     <View style={styles.mandiCard}>
       <View>
-        <Text style={styles.cardTitle}>{best.mandi_name}</Text>
-        <Text style={styles.cardValue}>{price}</Text>
-        <Text style={styles.cardMeta}>{best.distance_km?.toFixed?.(0) || '?'} km · {net} · {quantity} kg</Text>
+        <TranslatedText style={styles.cardTitle} text={best.mandi_name} />
+        <TranslatedText style={styles.cardValue} text={price} />
+        <TranslatedText style={styles.cardMeta} text={`${best.distance_km?.toFixed?.(0) || '?'} km · ${net} · ${quantity} kg`} />
       </View>
       <View style={styles.mandiBadge}>
         <Text style={styles.mandiBadgeText}>ML</Text>
@@ -510,9 +516,9 @@ function WeatherRow({ days = [] }) {
 function WeatherCard({ day, temp, status }) {
   return (
     <View style={styles.weatherCard}>
-      <Text style={styles.weatherDay}>{day}</Text>
-      <Text style={styles.weatherTemp}>{temp}</Text>
-      <Text style={styles.weatherStatus}>{status}</Text>
+      <TranslatedText style={styles.weatherDay} text={day} />
+      <TranslatedText style={styles.weatherTemp} text={temp} />
+      <TranslatedText style={styles.weatherStatus} text={status} />
     </View>
   )
 }
@@ -528,10 +534,10 @@ function AlertItem({ label, status, tone, detail }) {
   return (
     <View style={[styles.alertItem, { borderColor: toneStyle.borderColor, backgroundColor: toneStyle.backgroundColor }]}> 
       <View>
-        <Text style={styles.alertLabel}>{label}</Text>
-        <Text style={styles.alertDetail}>{detail}</Text>
+        <TranslatedText style={styles.alertLabel} text={label} />
+        <TranslatedText style={styles.alertDetail} text={detail} />
       </View>
-      <Text style={[styles.alertStatus, { color: toneStyle.color }]}>{status}</Text>
+      <TranslatedText style={[styles.alertStatus, { color: toneStyle.color }]} text={status} />
     </View>
   )
 }
@@ -603,6 +609,7 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: {
     width: 44,
     height: 44,

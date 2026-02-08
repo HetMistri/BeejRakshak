@@ -27,6 +27,7 @@ export default {
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
       OPENWEATHER_API_KEY: process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || '',
       MANDI_API_BASE: process.env.EXPO_PUBLIC_MANDI_API_BASE || process.env.MANDI_API_BASE || 'http://localhost:8000/mandi',
+      GOOGLE_TRANSLATE_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY || process.env.GOOGLE_TRANSLATE_API_KEY || process.env.VITE_GOOGLE_TRANSLATE_API_KEY || '',
     },
   },
 }
