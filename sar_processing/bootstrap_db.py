@@ -3,7 +3,13 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from config import DB_SSLMODE, DB_URL
 
 
+def _require_db_url():
+    if not DB_URL:
+        raise ValueError("DATABASE_URL is not set. Configure it in the environment before bootstrapping the DB.")
+
+
 def get_conn():
+    _require_db_url()
     conn = psycopg2.connect(DB_URL, sslmode=DB_SSLMODE)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     return conn

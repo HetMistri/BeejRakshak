@@ -7,9 +7,9 @@
       "distance_km": 5,
       "crowd_level": "Low",
       "crop_prices": {
-        "Cotton": 50,
-        "Wheat": 25,
-        "Onion": 30
+        "Onion": 30,
+        "Tomato": 22,
+        "Potato": 28
       }
     },
     {
@@ -19,9 +19,9 @@
       "distance_km": 15,
       "crowd_level": "High",
       "crop_prices": {
-        "Cotton": 52,
-        "Wheat": 26,
-        "Onion": 32
+        "Onion": 32,
+        "Tomato": 24,
+        "Potato": 30
       }
     },
     {
@@ -31,9 +31,9 @@
       "distance_km": 25,
       "crowd_level": "Low",
       "crop_prices": {
-        "Cotton": 54,
-        "Wheat": 28,
-        "Onion": 35
+        "Onion": 35,
+        "Tomato": 26,
+        "Potato": 33
       }
     },
     {
@@ -43,9 +43,9 @@
       "distance_km": 35,
       "crowd_level": "Medium",
       "crop_prices": {
-        "Cotton": 56,
-        "Wheat": 30,
-        "Onion": 38
+        "Onion": 38,
+        "Tomato": 28,
+        "Potato": 36
       }
     },
     {
@@ -55,9 +55,9 @@
       "distance_km": 40,
       "crowd_level": "Low",
       "crop_prices": {
-        "Cotton": 58,
-        "Wheat": 33,
-        "Onion": 40
+        "Onion": 40,
+        "Tomato": 30,
+        "Potato": 38
       }
     }
   ],

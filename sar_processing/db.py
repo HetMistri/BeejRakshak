@@ -4,7 +4,13 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from config import DB_SSLMODE, DB_URL
 
+
+def _require_db_url():
+    if not DB_URL:
+        raise ValueError("DATABASE_URL is not set. Configure it in the environment before running SAR processing.")
+
 def get_connection():
+    _require_db_url()
     return psycopg2.connect(DB_URL, sslmode=DB_SSLMODE)
 
 def fetch_fields():

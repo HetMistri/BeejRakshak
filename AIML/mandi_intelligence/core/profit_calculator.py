@@ -100,7 +100,7 @@ def rank_mandis(
     Rank mandis by net profit for a given crop and quantity.
     
     Args:
-        crop: Name of the crop (e.g., "Cotton", "Wheat", "Onion")
+        crop: Name of the crop (e.g., "Onion", "Tomato", "Potato")
         quantity: Quantity to sell in kg
         mandis_data: List of mandi dictionaries from JSON
     

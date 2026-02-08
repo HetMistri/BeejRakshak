@@ -56,7 +56,7 @@ See the algorithm in action with a console table:
 python scripts/visualize.py
 ```
 
-This will print comparison tables for Cotton, Wheat, and Onion showing how **net profit differs from gross earnings**.
+This legacy demo prints comparison tables for Onion, Tomato, and Potato showing how **net profit differs from gross earnings**. The ML pipeline itself targets Onion, Tomato, and Potato from the AGMARKNET dataset.
 
 ### 3. Start the API Server
 
@@ -73,19 +73,19 @@ The API will be available at `http://localhost:8000`
 Get optimal mandi recommendations for a crop.
 
 **Query Parameters:**
-- `crop` (required): Crop name - `"Cotton"`, `"Wheat"`, or `"Onion"`
+- `crop` (required): Crop name - `"Onion"`, `"Tomato"`, or `"Potato"`
 - `quantity` (required): Quantity to sell in kg (must be > 0)
 - `current_location` (optional): Current location (defaults to "Gandhinagar")
 
 **Example Request:**
 ```
-GET http://localhost:8000/get_best_mandi?crop=Cotton&quantity=1000
+GET http://localhost:8000/get_best_mandi?crop=Onion&quantity=1000
 ```
 
 **Example Response:**
 ```json
 {
-  "crop": "Cotton",
+  "crop": "Onion",
   "quantity": 1000,
   "recommendations": [
     {
@@ -131,33 +131,33 @@ Interactive API documentation (Swagger UI).
 
 ## 🗺️ Mock Data
 
-The module includes data for **5 mandis** around Gandhinagar:
+The repository includes a **legacy demo dataset** in `data/mandi_data.json` with 5 mandis around Gandhinagar. This is used by the non-ML demo path. The ML pipeline uses the Kaggle AGMARKNET dataset and currently targets **Onion, Tomato, and Potato**.
 
-| Mandi | Distance | Cotton Price | Wheat Price | Onion Price | Crowd |
+| Mandi | Distance | Onion Price | Tomato Price | Potato Price | Crowd |
 |-------|----------|--------------|-------------|-------------|-------|
-| Sardar Patel Mandi | 5 km | ₹50/kg | ₹25/kg | ₹30/kg | Low |
-| Kalol Agricultural Market | 15 km | ₹52/kg | ₹26/kg | ₹32/kg | High |
-| Mehsana Grain Market | 25 km | ₹54/kg | ₹28/kg | ₹35/kg | Low |
-| Visnagar Wholesale Market | 35 km | ₹56/kg | ₹30/kg | ₹38/kg | Medium |
-| **Ahmedabad APMC** | **40 km** | **₹58/kg** | **₹33/kg** | **₹40/kg** | **Low** |
+| Sardar Patel Mandi | 5 km | ₹30/kg | ₹22/kg | ₹28/kg | Low |
+| Kalol Agricultural Market | 15 km | ₹32/kg | ₹24/kg | ₹30/kg | High |
+| Mehsana Grain Market | 25 km | ₹35/kg | ₹26/kg | ₹33/kg | Low |
+| Visnagar Wholesale Market | 35 km | ₹38/kg | ₹28/kg | ₹36/kg | Medium |
+| **Ahmedabad APMC** | **40 km** | **₹40/kg** | **₹30/kg** | **₹38/kg** | **Low** |
 
 **Key Design:** The furthest mandi (Ahmedabad APMC) has significantly higher prices to demonstrate arbitrage opportunities.
 
 ## 💡 Example Use Cases
 
-### Use Case 1: Cotton Farmer with 1000 kg
+### Use Case 1: Onion Farmer with 1000 kg
 
 **Naive approach:** Go to nearest mandi (5km)
-- Gross earnings: ₹50,000
+- Gross earnings: ₹30,000
 - Transport cost: ₹75
-- **Net profit: ₹49,925**
+- **Net profit: ₹29,925**
 
 **Smart approach:** Go to Ahmedabad APMC (40km)
-- Gross earnings: ₹58,000
+- Gross earnings: ₹40,000
 - Transport cost: ₹600
-- **Net profit: ₹57,400** ✅
+- **Net profit: ₹39,400** ✅
 
-**Result:** ₹7,475 more profit by traveling 35km further!
+**Result:** ₹9,475 more profit by traveling 35km further!
 
 ### Use Case 2: Understanding Crowd Impact
 
@@ -185,9 +185,9 @@ It should demonstrate that:
 3. ✅ Perishability costs apply to high-crowd mandis
 4. ✅ Rankings are sorted by net profit (not price)
 
-### Adding More Mandis
+### Adding More Mandis (Legacy Demo Dataset)
 
-Edit `data/mandi_data.json` to add more mandis. Each mandi needs:
+Edit `data/mandi_data.json` to add more mandis for the legacy demo. Each mandi needs:
 ```json
 {
   "id": "MANDI_X",
@@ -196,9 +196,9 @@ Edit `data/mandi_data.json` to add more mandis. Each mandi needs:
   "distance_km": 20,
   "crowd_level": "Low|Medium|High",
   "crop_prices": {
-    "Cotton": 55,
-    "Wheat": 28,
-    "Onion": 35
+    "Onion": 35,
+    "Tomato": 26,
+    "Potato": 33
   }
 }
 ```

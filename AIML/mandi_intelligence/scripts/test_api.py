@@ -26,11 +26,11 @@ def test_api_with_requests():
     print(f"   Status: {response.status_code}")
     print(f"   Response: {response.json()}")
     
-    # Test 2: Get best mandi for Cotton
-    print("\n2️⃣ Testing Best Mandi for Cotton (1000 kg)...")
+    # Test 2: Get best mandi for Onion
+    print("\n2️⃣ Testing Best Mandi for Onion (1000 kg)...")
     response = requests.get(
         f"{base_url}/get_best_mandi",
-        params={"crop": "Cotton", "quantity": 1000}
+        params={"crop": "Onion", "quantity": 1000}
     )
     print(f"   Status: {response.status_code}")
     data = response.json()
@@ -42,11 +42,11 @@ def test_api_with_requests():
     for i, rec in enumerate(data['recommendations'][:3], 1):
         print(f"      {i}. {rec['mandi_name']} - Net Profit: ₹{rec['net_profit']:,.0f}")
     
-    # Test 3: Get best mandi for Wheat
-    print("\n3️⃣ Testing Best Mandi for Wheat (2000 kg)...")
+    # Test 3: Get best mandi for Tomato
+    print("\n3️⃣ Testing Best Mandi for Tomato (2000 kg)...")
     response = requests.get(
         f"{base_url}/get_best_mandi",
-        params={"crop": "Wheat", "quantity": 2000}
+        params={"crop": "Tomato", "quantity": 2000}
     )
     data = response.json()
     print(f"   🏆 Top Recommendation: {data['top_recommendation']['mandi']}")
@@ -56,7 +56,7 @@ def test_api_with_requests():
     print("\n4️⃣ Testing Error Handling (Invalid Crop)...")
     response = requests.get(
         f"{base_url}/get_best_mandi",
-        params={"crop": "Tomato", "quantity": 1000}
+        params={"crop": "Mango", "quantity": 1000}
     )
     print(f"   Status: {response.status_code}")
     if response.status_code == 400:
@@ -81,8 +81,8 @@ def test_api_with_urllib():
         print(f"   Mandis loaded: {data.get('mandis_loaded', 0)}")
     
     # Test get_best_mandi
-    print("\n2️⃣ Testing Best Mandi for Cotton (1000 kg)...")
-    url = f"{base_url}/get_best_mandi?crop=Cotton&quantity=1000"
+    print("\n2️⃣ Testing Best Mandi for Onion (1000 kg)...")
+    url = f"{base_url}/get_best_mandi?crop=Onion&quantity=1000"
     with urllib.request.urlopen(url) as response:
         data = json.loads(response.read().decode())
         print(f"   🏆 Top Recommendation: {data['top_recommendation']['mandi']}")

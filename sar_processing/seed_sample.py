@@ -7,6 +7,11 @@ import psycopg2
 from config import DB_SSLMODE, DB_URL
 
 
+def _require_db_url():
+    if not DB_URL:
+        raise ValueError("DATABASE_URL is not set. Configure it in the environment before seeding sample data.")
+
+
 TEST_POLYGON_WKT = (
     "POLYGON((78.3 17.3, 78.31 17.3, 78.31 17.31, 78.3 17.31, 78.3 17.3))"
 )
@@ -16,6 +21,7 @@ def seed_sample():
     farmer_id = uuid.uuid4()
     field_id = uuid.uuid4()
 
+    _require_db_url()
     with psycopg2.connect(DB_URL, sslmode=DB_SSLMODE) as conn:
         with conn.cursor() as cur:
             cur.execute(

@@ -69,17 +69,17 @@ def main():
     
     # Test scenarios
     print("\n" + "=" * 80)
-    print("  SCENARIO: Cotton Farmer - 1000 kg")
+    print("  SCENARIO: Onion Farmer - 1000 kg")
     print("=" * 80)
     print()
     
     recommendation = engine.get_best_selling_strategy(
         current_qty_kg=1000,
-        crop='Cotton',
+        crop='Onion',
         current_location='Gandhinagar',
         df_current=df_current,
         df_forecast=df_forecast,
-        crop_perishability_factor=0.005
+        crop_perishability_factor=0.03
     )
     
     print(json.dumps(recommendation, indent=2, ensure_ascii=False))

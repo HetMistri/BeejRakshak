@@ -367,6 +367,6 @@ if __name__ == "__main__":
     results = predictor.train_all_models(df_featured)
     
     # Test prediction
-    print("\n🔮 Sample 7-day forecast for Ahmedabad - Cotton:")
-    forecast = predictor.predict_future_price(df_featured, 'Ahmedabad', 'Cotton', days_ahead=7)
+    print("\n🔮 Sample 7-day forecast for Ahmedabad - Onion:")
+    forecast = predictor.predict_future_price(df_featured, 'Ahmedabad', 'Onion', days_ahead=7)
     print(forecast)

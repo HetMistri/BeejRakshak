@@ -11,11 +11,9 @@ const LANGUAGES = [
 ]
 
 const CROPS = [
-  { value: 'rice', label: 'Rice' },
-  { value: 'wheat', label: 'Wheat' },
-  { value: 'cotton', label: 'Cotton' },
-  { value: 'soybean', label: 'Soybean' },
-  { value: 'sugarcane', label: 'Sugarcane' },
+  { value: 'onion', label: 'Onion' },
+  { value: 'tomato', label: 'Tomato' },
+  { value: 'potato', label: 'Potato' },
 ]
 
 const CROP_STAGES = [

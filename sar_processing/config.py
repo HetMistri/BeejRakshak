@@ -6,10 +6,7 @@ load_dotenv()
 # -------------------------
 # Database
 # -------------------------
-DB_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://agri_v0hw_user:8qBjxOpifu4vDs8isjAqNNJg4pFpkTWY@dpg-d635ad24d50c73ab0uk0-a.singapore-postgres.render.com/agri_v0hw?sslmode=require",
-)
+DB_URL = os.getenv("DATABASE_URL")
 DB_SSLMODE = os.getenv("DB_SSLMODE", "require")
 
 # -------------------------

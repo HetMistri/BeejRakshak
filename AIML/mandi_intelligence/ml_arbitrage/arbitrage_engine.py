@@ -59,8 +59,6 @@ class ArbitrageEngine:
         # Perishability factors (daily loss rate as fraction of quantity)
         # Based on crop shelf life: higher = more perishable
         self.perishability_factors = {
-            'Cotton': 0.005,   # Very low - cotton doesn't spoil quickly
-            'Wheat': 0.01,     # Low - grains are stable
             'Onion': 0.03,     # Higher - onions degrade faster
             'Tomato': 0.05,    # High - very perishable
             'Potato': 0.02,    # Medium
@@ -538,9 +536,9 @@ if __name__ == "__main__":
     
     # Sample current prices
     current_data = pd.DataFrame([
-        {'Mandi_Name': 'Ahmedabad', 'Crop': 'Cotton', 'Distance_km': 30, 'Price_per_kg': 55, 'Traffic_Congestion_Score': 0.7},
-        {'Mandi_Name': 'Mehsana', 'Crop': 'Cotton', 'Distance_km': 45, 'Price_per_kg': 58, 'Traffic_Congestion_Score': 0.4},
-        {'Mandi_Name': 'Rajkot', 'Crop': 'Cotton', 'Distance_km': 220, 'Price_per_kg': 62, 'Traffic_Congestion_Score': 0.3},
+        {'Mandi_Name': 'Ahmedabad', 'Crop': 'Onion', 'Distance_km': 30, 'Price_per_kg': 35, 'Traffic_Congestion_Score': 0.7},
+        {'Mandi_Name': 'Mehsana', 'Crop': 'Onion', 'Distance_km': 45, 'Price_per_kg': 38, 'Traffic_Congestion_Score': 0.4},
+        {'Mandi_Name': 'Rajkot', 'Crop': 'Onion', 'Distance_km': 220, 'Price_per_kg': 41, 'Traffic_Congestion_Score': 0.3},
     ])
     
     # Initialize engine
@@ -549,7 +547,7 @@ if __name__ == "__main__":
     # Test spatial arbitrage
     recommendation = engine.get_best_selling_strategy(
         current_qty_kg=1000,
-        crop='Cotton',
+        crop='Onion',
         current_location='Gandhinagar',
         df_current=current_data
     )

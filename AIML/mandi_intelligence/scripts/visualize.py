@@ -107,9 +107,9 @@ def main():
     
     # Test scenarios
     scenarios = [
-        ("Cotton", 1000),
-        ("Wheat", 2000),
         ("Onion", 1500),
+        ("Tomato", 1200),
+        ("Potato", 2000),
     ]
     
     for crop, quantity in scenarios:

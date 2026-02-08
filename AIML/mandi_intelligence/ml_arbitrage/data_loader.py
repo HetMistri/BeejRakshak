@@ -332,9 +332,9 @@ class MandiDataLoader:
         
         # Base prices (₹/kg)
         base_prices = {
-            'Cotton': 55,
-            'Wheat': 28,
-            'Onion': 35
+            'Onion': 35,
+            'Tomato': 26,
+            'Potato': 33
         }
         
         for date in dates:

@@ -19,7 +19,7 @@ print(f"Gujarat records: {len(gujarat):,}")
 print()
 
 # Check each target crop
-for crop in ['Onion', 'Tomato', 'Potato', 'Wheat', 'Cotton']:
+for crop in ['Onion', 'Tomato', 'Potato']:
     crop_data = gujarat[gujarat['Commodity'].str.contains(crop, case=False, na=False)]
     if len(crop_data) > 0:
         print(f"{crop}:")

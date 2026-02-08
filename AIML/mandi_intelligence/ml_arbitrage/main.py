@@ -165,70 +165,70 @@ def main():
     print(f"   Generated {len(df_forecast)} price predictions")
     
     # ============================================================================
-    # SCENARIO 1: Cotton Farmer with 1000 kg
+    # SCENARIO 1: Onion Farmer with 1000 kg
     # ============================================================================
     
-    print_header("SCENARIO 1: Cotton Farmer with 1000 kg (Low Perishability)")
+    print_header("SCENARIO 1: Onion Farmer with 1000 kg (High Perishability)")
     
     print("🌾 Farmer Profile:")
-    print("   Crop: Cotton")
+    print("   Crop: Onion")
     print("   Quantity: 1,000 kg")
-    print("   Perishability: 0.005 (very low - cotton is stable)")
+    print("   Perishability: 0.03 (higher - onions degrade faster)")
     print()
     
     recommendation_1 = engine.get_best_selling_strategy(
         current_qty_kg=1000,
-        crop='Cotton',
-        current_location='Gandhinagar',
-        df_current=df_current,
-        df_forecast=df_forecast,
-        crop_perishability_factor=0.005
-    )
-    
-    print_json_pretty(recommendation_1, "💡 RECOMMENDATION")
-    
-    # ============================================================================
-    # SCENARIO 2: Wheat Farmer with 500 kg
-    # ============================================================================
-    
-    print_header("SCENARIO 2: Wheat Farmer with 500 kg (Medium Perishability)")
-    
-    print("🌾 Farmer Profile:")
-    print("   Crop: Wheat")
-    print("   Quantity: 500 kg")
-    print("   Perishability: 0.01 (low-medium - grains are fairly stable)")
-    print()
-    
-    recommendation_2 = engine.get_best_selling_strategy(
-        current_qty_kg=500,
-        crop='Wheat',
-        current_location='Gandhinagar',
-        df_current=df_current,
-        df_forecast=df_forecast,
-        crop_perishability_factor=0.01
-    )
-    
-    print_json_pretty(recommendation_2, "💡 RECOMMENDATION")
-    
-    # ============================================================================
-    # SCENARIO 3: Onion Farmer with 2000 kg
-    # ============================================================================
-    
-    print_header("SCENARIO 3: Onion Farmer with 2000 kg (High Perishability)")
-    
-    print("🧅 Farmer Profile:")
-    print("   Crop: Onion")
-    print("   Quantity: 2,000 kg")
-    print("   Perishability: 0.03 (higher - onions degrade faster)")
-    print()
-    
-    recommendation_3 = engine.get_best_selling_strategy(
-        current_qty_kg=2000,
         crop='Onion',
         current_location='Gandhinagar',
         df_current=df_current,
         df_forecast=df_forecast,
         crop_perishability_factor=0.03
+    )
+    
+    print_json_pretty(recommendation_1, "💡 RECOMMENDATION")
+    
+    # ============================================================================
+    # SCENARIO 2: Tomato Farmer with 500 kg
+    # ============================================================================
+    
+    print_header("SCENARIO 2: Tomato Farmer with 500 kg (Very High Perishability)")
+    
+    print("🌾 Farmer Profile:")
+    print("   Crop: Tomato")
+    print("   Quantity: 500 kg")
+    print("   Perishability: 0.05 (very high - tomatoes spoil quickly)")
+    print()
+    
+    recommendation_2 = engine.get_best_selling_strategy(
+        current_qty_kg=500,
+        crop='Tomato',
+        current_location='Gandhinagar',
+        df_current=df_current,
+        df_forecast=df_forecast,
+        crop_perishability_factor=0.05
+    )
+    
+    print_json_pretty(recommendation_2, "💡 RECOMMENDATION")
+    
+    # ============================================================================
+    # SCENARIO 3: Potato Farmer with 2000 kg
+    # ============================================================================
+    
+    print_header("SCENARIO 3: Potato Farmer with 2000 kg (Medium Perishability)")
+    
+    print("🧅 Farmer Profile:")
+    print("   Crop: Potato")
+    print("   Quantity: 2,000 kg")
+    print("   Perishability: 0.02 (medium - potatoes store moderately well)")
+    print()
+    
+    recommendation_3 = engine.get_best_selling_strategy(
+        current_qty_kg=2000,
+        crop='Potato',
+        current_location='Gandhinagar',
+        df_current=df_current,
+        df_forecast=df_forecast,
+        crop_perishability_factor=0.02
     )
     
     print_json_pretty(recommendation_3, "💡 RECOMMENDATION")
@@ -239,7 +239,7 @@ def main():
     
     print_header("STEP 5: Net Profit Calculation Verification")
     
-    print("📐 Let's verify the math for Scenario 1 (Cotton):")
+    print("📐 Let's verify the math for Scenario 1 (Onion):")
     print("-" * 80)
     
     opt = recommendation_1['optimal_strategy']

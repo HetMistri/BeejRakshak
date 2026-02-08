@@ -68,7 +68,7 @@ python ml_arbitrage/main.py
 This will:
 1. Load/generate 90 days of mandi price data
 2. Train XGBoost models for all Mandi-Crop combinations
-3. Run 3 example scenarios (Cotton, Wheat, Onion)
+3. Run 3 example scenarios (Onion, Tomato, Potato)
 4. Output structured JSON recommendations
 
 ## 📊 Example Output
@@ -77,7 +77,7 @@ This will:
 {
   "recommendation": "Wait 3 days, then sell at Mehsana",
   "strategy_type": "TEMPORAL_SPATIAL",
-  "crop": "Cotton",
+  "crop": "Onion",
   "quantity_kg": 1000,
   "optimal_strategy": {
     "mandi": "Mehsana",
@@ -99,20 +99,20 @@ This will:
 
 ## 🧪 Three Example Scenarios
 
-### Scenario 1: Cotton (1000 kg) - Low Perishability
-- **Perishability Factor**: 0.005 (very low)
-- **Strategy**: May recommend farther mandi or waiting
-- **Reason**: Cotton is stable, can afford to wait/travel
-
-### Scenario 2: Wheat (500 kg) - Medium Perishability
-- **Perishability Factor**: 0.01 (low-medium)
-- **Strategy**: Balanced approach
-- **Reason**: Grains are fairly stable
-
-### Scenario 3: Onion (2000 kg) - High Perishability
+### Scenario 1: Onion (1000 kg) - High Perishability
 - **Perishability Factor**: 0.03 (higher)
 - **Strategy**: Likely recommends selling quickly
-- **Reason**: Onions degrade fast, storage costs high
+- **Reason**: Onions degrade faster
+
+### Scenario 2: Tomato (500 kg) - Very High Perishability
+- **Perishability Factor**: 0.05 (very high)
+- **Strategy**: Often recommends selling quickly
+- **Reason**: Tomatoes spoil quickly
+
+### Scenario 3: Potato (2000 kg) - Medium Perishability
+- **Perishability Factor**: 0.02 (medium)
+- **Strategy**: Balanced approach
+- **Reason**: Potatoes store moderately well
 
 ## 🔬 How It Works
 
@@ -226,7 +226,7 @@ When you run `python ml_arbitrage/main.py`, you'll see:
 
 Look for lines like:
 ```
-✅ Ahmedabad - Cotton: MAE=₹1.85/kg | MAPE=3.2%
+✅ Ahmedabad - Onion: MAE=₹1.85/kg | MAPE=3.2%
 ```
 This shows the model predicts prices with ~₹2 accuracy.
 
