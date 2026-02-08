@@ -8,10 +8,12 @@ Provides endpoints for price predictions (`/response`) and feedback (`/respond`)
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pathlib import Path
 import sys
+import base64
 import pandas as pd
 
 # Add parent directory to path to import core logic
@@ -33,12 +35,22 @@ app.add_middleware(
     allow_origins=[
         "https://beej-rakshak.vercel.app",
         "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:8081",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount scrapbot static so PMFBY claim PDFs are served at /static/Claim_*.pdf
+_scrapbot_static = Path(__file__).resolve().parent.parent.parent / "scrapbot" / "static"
+if _scrapbot_static.exists():
+    app.mount("/static", StaticFiles(directory=str(_scrapbot_static)), name="static")
+else:
+    _scrapbot_static.mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=str(_scrapbot_static)), name="static")
 
 # Global instances (loaded on startup)
 data_loader = None
@@ -337,6 +349,78 @@ async def list_mandis():
         "total_mandis": len(mandis_info),
         "mandis": mandis_info
     }
+
+
+# ─── Government Schemes (runs on same server as Mandi, no extra port) ───
+class SchemeRequest(BaseModel):
+    """Request for scheme recommendation (Govt Schemes tab)."""
+    state: str = "Gujarat"
+    land_size_hectares: float = 2.0
+    category: str = "small_farmer"
+
+
+@app.post("/schemes/api/v1/schemes/recommend", tags=["Government Schemes"])
+async def schemes_recommend(request: SchemeRequest):
+    """Recommend government schemes by state and farmer category. Served alongside Mandi on port 8000."""
+    try:
+        scrapbot_src = Path(__file__).resolve().parent.parent.parent / "scrapbot" / "src"
+        if str(scrapbot_src) not in sys.path:
+            sys.path.insert(0, str(scrapbot_src))
+        from scheme_matcher import get_recommended_schemes
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Scheme matcher not available")
+    profile = {"state": request.state, "category": request.category}
+    matches = get_recommended_schemes(profile)
+    return {"status": "success", "farmer_profile": profile, "count": len(matches), "schemes": matches}
+
+
+class ClaimRequest(BaseModel):
+    """Request for PMFBY insurance claim PDF generation."""
+    farmer: Dict[str, Any]
+    crop: Dict[str, Any]
+    incident: Dict[str, Any]
+
+
+@app.post("/schemes/api/v1/claims/generate", tags=["Government Schemes"])
+async def claims_generate(request: ClaimRequest):
+    """Generate PMFBY insurance claim PDF with AI damage assessment. Requires fpdf: pip install fpdf."""
+    try:
+        scrapbot_src = Path(__file__).resolve().parent.parent.parent / "scrapbot" / "src"
+        if str(scrapbot_src) not in sys.path:
+            sys.path.insert(0, str(scrapbot_src))
+        from claim_generator import generate_insurance_claim
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Claim PDF generation unavailable. Install: pip install fpdf",
+        ) from e
+    try:
+        rain_mm = request.incident.get("detected_rainfall_mm", 0) or 0
+        loss_percent = "85%" if rain_mm > 100 else "10%"
+        damage_report = {
+            "type": request.incident.get("type", "Unknown"),
+            "date": request.incident.get("timestamp", "Today"),
+            "loss_percentage": loss_percent,
+            "rainfall_mm": rain_mm,
+        }
+        pdf_path = generate_insurance_claim(request.farmer, request.crop, damage_report)
+        # Resolve full path: claim_generator returns "static/Claim_xxx.pdf" relative to scrapbot
+        scrapbot_root = Path(__file__).resolve().parent.parent.parent / "scrapbot"
+        full_path = scrapbot_root / pdf_path
+        pdf_base64 = None
+        if full_path.exists():
+            pdf_base64 = base64.b64encode(full_path.read_bytes()).decode("utf-8")
+        return {
+            "status": "success",
+            "ai_assessment": {
+                "risk_level": "CRITICAL" if rain_mm > 100 else "LOW",
+                "loss_percentage": loss_percent,
+            },
+            "pdf_url": f"http://localhost:8000/{pdf_path}",
+            "pdf_base64": pdf_base64,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":

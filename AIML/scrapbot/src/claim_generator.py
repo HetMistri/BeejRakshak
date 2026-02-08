@@ -1,10 +1,23 @@
 from fpdf import FPDF
-from datetime import datetime
 from pathlib import Path
 
 # Path setup
-BASE_DIR = Path(__file__).resolve().parent.parent # BeejRakshak_Unified/scrapbot
+BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
+
+
+class PMFBYClaimPDF(FPDF):
+    def section_title(self, text):
+        self.set_font("Arial", "B", 12)
+        self.cell(0, 10, text, 0, 1)
+        self.set_font("Arial", "", 10)
+
+    def add_field(self, label, value):
+        self.set_font("Arial", "B", 10)
+        self.cell(50, 8, label, 0, 0)
+        self.set_font("Arial", "", 10)
+        self.cell(0, 8, str(value), 0, 1)
+
 
 def generate_insurance_claim(farmer_data, crop_data, damage_report):
     # Ensure static directory exists

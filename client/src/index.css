@@ -146,12 +146,51 @@
   display: none !important;
 }
 
-/* Hide the Google Translate banner at the top */
-.goog-te-banner-frame,
-.skiptranslate iframe {
+/* ── Google Translate layout fixes ── */
+
+/* Hide the banner frame at top */
+.goog-te-banner-frame {
   display: none !important;
 }
 
+/* Google Translate pushes body down + sets position: relative — undo both */
 body {
   top: 0 !important;
+  position: static !important;
+}
+
+/* Google Translate sets overflow:hidden on html when active — undo */
+html.translated-ltr,
+html.translated-rtl {
+  overflow: auto !important;
+}
+
+/* Hide the top skip-translate bar Google injects before #root */
+body > .skiptranslate {
+  display: none !important;
+  height: 0 !important;
+}
+
+/* But keep the widget dropdown inside our container visible */
+.google-translate-container .skiptranslate,
+.google-translate-container .goog-te-gadget {
+  display: inline-block !important;
+  height: auto !important;
+}
+
+/* Hide tooltip popups */
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* Ensure the translated <font> wrappers don't break flex */
+font {
+  display: contents !important;
+}
+
+/* Root always fills viewport */
+#root {
+  min-height: 100vh;
+  width: 100%;
 }

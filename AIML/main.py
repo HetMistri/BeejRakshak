@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import uvicorn
 
 # Configure Paths so sub-modules can be imported
@@ -10,11 +11,7 @@ sys.path.append(str(BASE_DIR))
 sys.path.append(str(BASE_DIR / "mandi_intelligence"))
 sys.path.append(str(BASE_DIR / "scrapbot" / "src"))
 
-# Clean up potential duplicate imports or conflicts if necessary
-# (Optional, but good practice if modules have same names)
-
-# Import the sub-applications
-# Note: We import them AFTER modifying sys.path
+# Import the sub-applications (schemes optional if fpdf etc. missing)
 from mandi_intelligence.api.main import app as mandi_app
 from mandi_intelligence.api.main import (
     list_mandis as mandi_list_mandis,
@@ -24,7 +21,14 @@ from mandi_intelligence.api.main import (
     RecommendRequest,
     RespondRequest,
 )
-from scrapbot.src.main import app as scrapbot_app
+
+try:
+    from scrapbot.src.main import app as scrapbot_app
+    scrapbot_loaded = True
+except Exception as e:
+    scrapbot_loaded = False
+    scrapbot_app = None
+    print("⚠️ Scheme assistant not loaded (install fpdf for full support):", e)
 
 # Create the Master App
 app = FastAPI(
@@ -38,6 +42,8 @@ app.add_middleware(
     allow_origins=[
         "https://beej-rakshak.vercel.app",
         "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:8081",
     ],
     allow_credentials=True,
@@ -47,7 +53,8 @@ app.add_middleware(
 
 # Mount the sub-applications
 app.mount("/mandi", mandi_app)
-app.mount("/schemes", scrapbot_app)
+if scrapbot_loaded:
+    app.mount("/schemes", scrapbot_app)
 
 @app.on_event("startup")
 async def startup_event():
@@ -96,6 +103,24 @@ async def respond_root_alias(request: dict):
 @app.get("/mandi-health")
 async def mandi_health_root_alias():
     return await mandi_health_check()
+
+
+# Schemes recommend fallback when scrapbot app failed to load (e.g. missing fpdf)
+class SchemeRequest(BaseModel):
+    state: str
+    land_size_hectares: float
+    category: str
+
+
+if not scrapbot_loaded:
+    from scrapbot.src.scheme_matcher import get_recommended_schemes
+
+    @app.post("/schemes/api/v1/schemes/recommend")
+    async def schemes_recommend_fallback(request: SchemeRequest):
+        profile = {"state": request.state, "category": request.category}
+        matches = get_recommended_schemes(profile)
+        return {"status": "success", "farmer_profile": profile, "count": len(matches), "schemes": matches}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

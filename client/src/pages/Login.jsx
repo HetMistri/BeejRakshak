@@ -90,11 +90,8 @@ export default function Login({ onLogin }) {
       <div className="w-full max-w-[420px] relative z-10 animate-slide-up">
         {/* Logo + Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-glow-emerald mb-5 animate-float-slow">
-            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c-1.2 0-4.8 1.6-4.8 6.4 0 2.4.8 4 2.4 5.2V21h4.8v-6.4c1.6-1.2 2.4-2.8 2.4-5.2C16.8 4.6 13.2 3 12 3z" />
-              <path strokeLinecap="round" d="M12 3v6" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden shadow-glow-emerald mb-5 animate-float-slow bg-white/5">
+            <img src="/tea.png" alt="BeejRakshak" className="w-full h-full object-contain p-1" />
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight text-shadow">
             BeejRakshak

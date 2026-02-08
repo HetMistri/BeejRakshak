@@ -202,12 +202,7 @@ export default function Registration({ session, onComplete, onSignOut }) {
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-stone-200/60">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
-                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c-1.2 0-4.8 1.6-4.8 6.4 0 2.4.8 4 2.4 5.2V21h4.8v-6.4c1.6-1.2 2.4-2.8 2.4-5.2C16.8 4.6 13.2 3 12 3z" />
-                  <path strokeLinecap="round" d="M12 3v6" />
-                </svg>
-              </div>
+              <img src="/tea.png" alt="BeejRakshak" className="w-8 h-8 rounded-lg object-cover shadow-sm" />
               <span className="font-bold text-stone-800 text-sm">BeejRakshak</span>
             </div>
             <div className="flex items-center gap-2">

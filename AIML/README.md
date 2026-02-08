@@ -1,42 +1,66 @@
-# BeejRakshak Unified
+# BeejRakshak AIML — Unified API
 
-This repository contains the unified codebase for **Mandi Intelligence** and **ScraperBot**, offering a comprehensive solution for agricultural market insights and government scheme information.
+Single FastAPI application that mounts **Mandi Intelligence** and **Scrapbot (Scheme Assistant)**. One server, two modules.
 
-## Modules
+---
 
-### 1. Mandi Intelligence
-Located in `mandi_intelligence/`.
-Core features:
-- **Price Prediction**: ML-based forecasting of crop prices.
-- **Arbitrage Engine**: Calculates true net profit by factoring in transportation costs.
-- **Market Recommendations**: Suggests the best Mandi for farmers to sell their produce.
+## What It Does
 
-### 2. ScraperBot (Scheme Assistant)
-Located in `scrapbot/`.
-Core features:
-- **Scheme Scraping**: Extracts government schemes from official sources.
-- **Eligibility Matching**: Matches farmers with eligible schemes.
-- **Claim Generation**: Generates PDF claim forms for schemes.
+- **Mandi** (`/mandi`): ML-based mandi price recommendations and farmer feedback. Uses `commodity_price.csv`, XGBoost per mandi–crop, arbitrage engine (net profit with transport/storage/perishability).
+- **Schemes** (`/schemes`): Government scheme recommendations by state/category; PMFBY claim PDF generation (FPDF). Serves scrapbot static files (e.g. claim PDFs at `/static/`).
 
-## Installation
+---
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Tech Stack
 
-## Usage
+- **Runtime**: Python 3.x, FastAPI, Uvicorn.
+- **Mandi**: Pandas, XGBoost, scikit-learn. Dataset: `mandi_intelligence/dataset/commodity_price.csv` (AGMARKNET-style). Models in `mandi_intelligence/ml_arbitrage/models/` (pickled XGBoost).
+- **Scrapbot**: FPDF (claim PDFs), JSON `schemes_db.json`; scheme_scraper, scheme_matcher, claim_generator.
 
-### Running Mandi Intelligence API
-Navigate to `mandi_intelligence` and run the FastAPI server:
-```bash
-cd mandi_intelligence
-uvicorn api.main:app --reload
+---
+
+## Layout
+
+```
+AIML/
+├── main.py                    # Unified app: CORS, mount /mandi, /schemes; root /health, /mandis, /response, /respond
+├── mandi_intelligence/       # Mandi API + ml_arbitrage + dataset (see mandi_intelligence/README.md)
+└── scrapbot/                  # Scheme API + scraper + matcher + claims (see scrapbot/README.md)
 ```
 
-### Running ScraperBot
-Navigate to `scrapbot/src` and run the application:
+---
+
+## Run
+
+From repo root or `AIML/`:
+
 ```bash
-cd scrapbot/src
+# Dependencies (in AIML or mandi_intelligence)
+pip install -r mandi_intelligence/requirements.txt
+pip install fpdf   # for claim PDFs
+
+# Start unified API (default port 8000)
 python main.py
+# or: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+- **Docs**: http://localhost:8000/docs  
+- **Mandi**: http://localhost:8000/mandi/docs  
+- **Schemes**: http://localhost:8000/schemes/docs (if scrapbot loaded)
+
+If FPDF is missing, schemes mount may be skipped; a fallback route for `/schemes/api/v1/schemes/recommend` can still serve scheme recommendations via `scheme_matcher`.
+
+---
+
+## Endpoints (root)
+
+- `GET /`, `GET /health` — status.
+- `GET /mandis` — list mandis (from Mandi).
+- `POST /response` — mandi recommendation (body: crop, quantity, optional farmer_location, latitude, longitude).
+- `POST /respond` — submit farmer feedback/sale data.
+- `GET /mandi-health` — Mandi health.
+- Schemes: under `/schemes/` (e.g. recommend, claims/generate) when scrapbot is loaded.
+
+---
+
+Part of **BeejRakshak**. See root `README.md` for full project overview.

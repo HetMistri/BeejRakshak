@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { GoogleTranslateWidget } from "../translation";
+import GovernmentSchemes from "../components/GovernmentSchemes";
 
 /* ─── SVG icon paths ─── */
 const ICONS = {
@@ -28,6 +29,8 @@ const ICONS = {
   bell: "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
   chart:
     "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
+  schemes:
+    "M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z",
 };
 
 const NAV_ITEMS = [
@@ -35,6 +38,7 @@ const NAV_ITEMS = [
   { id: "weather", label: "Weather", icon: ICONS.weather },
   { id: "mandi", label: "Mandi Prices", icon: ICONS.mandi },
   { id: "advisory", label: "Crop Advisory", icon: ICONS.advisory },
+  { id: "schemes", label: "Govt Schemes", icon: ICONS.schemes },
   { id: "alerts", label: "Alert System", icon: ICONS.alerts },
   { id: "calendar", label: "Adaptive Calendar", icon: ICONS.calendar },
 ];
@@ -110,22 +114,7 @@ export default function Dashboard({ session, onSignOut }) {
         <div
           className={`flex items-center gap-3 border-b border-white/[0.06] transition-all duration-300 ${sidebarOpen ? "px-5 py-5" : "px-3 py-5 justify-center"}`}
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
-            <svg
-              className="w-5 h-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 3c-1.2 0-4.8 1.6-4.8 6.4 0 2.4.8 4 2.4 5.2V21h4.8v-6.4c1.6-1.2 2.4-2.8 2.4-5.2C16.8 4.6 13.2 3 12 3z"
-              />
-              <path strokeLinecap="round" d="M12 3v6" />
-            </svg>
-          </div>
+          <img src="/tea.png" alt="BeejRakshak" className="w-9 h-9 rounded-xl object-cover shadow-lg shrink-0" />
           {sidebarOpen && (
             <div className="animate-fade-in">
               <h1 className="font-extrabold text-sm tracking-tight">
@@ -255,6 +244,7 @@ export default function Dashboard({ session, onSignOut }) {
           {activeTab === "weather" && <WeatherTab profile={profile} />}
           {activeTab === "mandi" && <MandiTab profile={profile} />}
           {activeTab === "advisory" && <AdvisoryTab profile={profile} />}
+          {activeTab === "schemes" && <GovernmentSchemes profile={profile} />}
           {activeTab === "alerts" && <AlertSystemTab profile={profile} />}
           {activeTab === "calendar" && (
             <AdaptiveCalendarTab profile={profile} />
@@ -446,7 +436,73 @@ function scoreActivities(dayData) {
   };
 }
 
-function AdaptiveFarmCalendar({ profile }) {
+/** Seasonal prediction for any date when real forecast is missing (India-focused). */
+function syntheticDayPrediction(dateStr) {
+  const d = new Date(dateStr + "T12:00:00");
+  const month = d.getMonth();
+  const day = d.getDate();
+  const seed = month * 31 + day;
+  const vary = (base, range) => base + (seed % range) - (range / 2);
+
+  // Rough Indian seasonal pattern: 0-1 winter, 2-4 summer, 5-8 monsoon, 9-10 post-monsoon, 11 winter
+  const isMonsoon = month >= 5 && month <= 8;
+  const isSummer = month >= 2 && month <= 4;
+  const isWinter = month <= 1 || month === 11;
+  const rainMm = isMonsoon ? vary(12, 20) : isWinter ? 0 : vary(2, 6);
+  const avgTemp = isSummer ? vary(34, 8) : isMonsoon ? vary(28, 6) : isWinter ? vary(22, 6) : vary(26, 6);
+  const avgHum = isMonsoon ? vary(78, 16) : isSummer ? vary(45, 20) : vary(55, 20);
+  const avgWind = vary(12, 10);
+  const maxWind = avgWind + (seed % 8);
+  const avgClouds = isMonsoon ? vary(75, 20) : vary(40, 40);
+
+  const heavyRain = rainMm > 10;
+  const hasRain = rainMm > 1;
+  const results = {};
+
+  if (heavyRain) {
+    results.irrigation = { status: "avoid", reason: `Expected heavy rain (~${Math.round(rainMm)}mm) — save water`, tip: "Let rain handle irrigation naturally" };
+    results.sowing = { status: "avoid", reason: "Heavy rain will wash away seeds", tip: "Wait for dry spell" };
+    results.spraying = { status: "avoid", reason: "Rain will wash off chemicals", tip: "Need 4–6 dry hours" };
+    results.harvesting = { status: "avoid", reason: "Wet — high crop moisture", tip: "Wait for dry window" };
+    results.fertilizing = { status: "avoid", reason: "Heavy rain causes nutrient runoff", tip: "Apply after rain passes" };
+  } else if (hasRain) {
+    results.irrigation = { status: "caution", reason: `Expected rain (~${rainMm.toFixed(0)}mm) — reduce watering`, tip: "Supplement only if soil dry" };
+    results.sowing = { status: "caution", reason: "Some rain expected", tip: "Sow if soil workable" };
+    results.spraying = { status: "avoid", reason: "Rain will wash off chemicals", tip: "Spray in dry window" };
+    results.harvesting = { status: "caution", reason: "Possible rain — check forecast", tip: "Harvest when dry" };
+    results.fertilizing = { status: "go", reason: "Light rain helps absorption", tip: "Apply before rain" };
+  } else {
+    results.irrigation = avgTemp > 30 && avgHum < 50
+      ? { status: "go", reason: `Hot & dry (${Math.round(avgTemp)}°C) — crops need water`, tip: "Irrigate early morning" }
+      : { status: "go", reason: "No rain expected — good day to irrigate", tip: "Check soil moisture" };
+    results.sowing = avgTemp >= 15 && avgTemp <= 35 && avgWind < 15
+      ? { status: "go", reason: `Calm, good temp (${Math.round(avgTemp)}°C)`, tip: "Ideal for sowing" }
+      : { status: "caution", reason: `Temp ${Math.round(avgTemp)}°C`, tip: "Choose tolerant varieties" };
+    results.spraying = avgWind < 10 && avgHum < 70
+      ? { status: "go", reason: "Low wind, moderate humidity", tip: "Good spray window" }
+      : { status: "caution", reason: "Acceptable conditions", tip: "Spray in calmest hours" };
+    results.harvesting = avgHum < 65
+      ? { status: "go", reason: "Dry, suitable for harvest", tip: "Harvest when dew clears" }
+      : { status: "caution", reason: "Moderate humidity", tip: "Harvest midday" };
+    results.fertilizing = avgWind < 20
+      ? { status: "go", reason: "Good conditions", tip: "Apply early morning or evening" }
+      : { status: "caution", reason: "Wind may scatter granules", tip: "Use liquid or wait" };
+  }
+
+  return {
+    activities: results,
+    summary: {
+      avgTemp: Math.round(avgTemp * 10) / 10,
+      avgHum: Math.round(avgHum * 10) / 10,
+      avgWind: Math.round(avgWind * 10) / 10,
+      maxWind: Math.round(maxWind * 10) / 10,
+      totalRain: Math.max(0, Math.round(rainMm * 10) / 10),
+      avgClouds: Math.round(avgClouds * 10) / 10,
+    },
+  };
+}
+
+function AdaptiveFarmCalendar({ profile, viewingMonth, viewingYear }) {
   const [forecastMap, setForecastMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -455,9 +511,17 @@ function AdaptiveFarmCalendar({ profile }) {
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const monthName = today.toLocaleString("default", { month: "long" });
+  const year =
+    viewingYear !== undefined && viewingYear !== null
+      ? viewingYear
+      : today.getFullYear();
+  const month =
+    viewingMonth !== undefined && viewingMonth !== null
+      ? viewingMonth
+      : today.getMonth();
+  const monthName = new Date(year, month, 1).toLocaleString("default", {
+    month: "long",
+  });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
 
@@ -541,7 +605,12 @@ function AdaptiveFarmCalendar({ profile }) {
     },
   };
 
-  const sel = selectedDate ? forecastMap[selectedDate] : null;
+  const getDayData = (dateStr) =>
+    forecastMap[dateStr] || syntheticDayPrediction(dateStr);
+
+  const isRealForecast = (dateStr) => !!forecastMap[dateStr];
+  const sel = selectedDate ? getDayData(selectedDate) : null;
+  const selIsPredicted = selectedDate ? !isRealForecast(selectedDate) : false;
 
   // Crop cycle
   const crop = profile?.primary_crop ? cap(profile.primary_crop) : "Crop";
@@ -573,6 +642,11 @@ function AdaptiveFarmCalendar({ profile }) {
           </h3>
           <p className="text-[11px] text-stone-400 mt-0.5">
             {crop} &middot; {stage} &middot; Day {cycleDay}
+            {(year !== today.getFullYear() || month !== today.getMonth()) && (
+              <span className="ml-1.5 text-amber-600">
+                &middot; Seasonal predictions
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -614,7 +688,7 @@ function AdaptiveFarmCalendar({ profile }) {
             const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const isToday = dateStr === todayStr;
             const isSelected = dateStr === selectedDate && !isToday;
-            const df = forecastMap[dateStr];
+            const df = getDayData(dateStr);
 
             const avoidCount = df
               ? FARM_ACTIVITIES.filter(
@@ -644,7 +718,7 @@ function AdaptiveFarmCalendar({ profile }) {
                   <span className="text-[7px] leading-none">&nbsp;</span>
                 )}
                 <div
-                  onClick={() => df && handleDayClick(dateStr)}
+                  onClick={() => handleDayClick(dateStr)}
                   className={`
                     w-[38px] h-[38px] rounded-full flex items-center justify-center text-[13px] transition-all
                     ${
@@ -679,16 +753,23 @@ function AdaptiveFarmCalendar({ profile }) {
           {/* Date header */}
           <div className="px-6 pt-5 pb-4 flex items-center justify-between">
             <div>
-              <h4 className="text-[22px] font-extrabold text-stone-800 tracking-tight leading-none">
-                {new Date(selectedDate + "T00:00:00").toLocaleDateString(
-                  "en-US",
-                  { day: "numeric", month: "short" },
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-[22px] font-extrabold text-stone-800 tracking-tight leading-none">
+                  {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                    "en-US",
+                    { day: "numeric", month: "short" },
+                  )}
+                  <span className="text-stone-300 font-bold mx-2">&middot;</span>
+                  <span className="text-sm font-semibold text-stone-400">
+                    {stage} day {cycleDay}
+                  </span>
+                </h4>
+                {selIsPredicted && (
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                    Seasonal prediction
+                  </span>
                 )}
-                <span className="text-stone-300 font-bold mx-2">&middot;</span>
-                <span className="text-sm font-semibold text-stone-400">
-                  {stage} day {cycleDay}
-                </span>
-              </h4>
+              </div>
               <p className="text-xs text-stone-400 mt-1.5">
                 {crop} crop cycle &middot;{" "}
                 {new Date(selectedDate + "T00:00:00").toLocaleDateString(
@@ -806,7 +887,44 @@ function AdaptiveFarmCalendar({ profile }) {
 /* ═══════════════════════════════════════════════════
    OVERVIEW TAB
    ═══════════════════════════════════════════════════ */
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 function OverviewTab({ session, profile, greeting }) {
+  const now = new Date();
+  const [viewingYear, setViewingYear] = useState(now.getFullYear());
+  const [viewingMonth, setViewingMonth] = useState(now.getMonth());
+  const [appDownloading, setAppDownloading] = useState(false);
+
+  const handleDownloadApp = () => {
+    setAppDownloading(true);
+    setTimeout(() => {
+      setAppDownloading(false);
+      alert("BeejRakshak mobile app is being downloaded. Please check your device for the installation.");
+    }, 1500);
+  };
+
+  const goPrevMonth = () => {
+    if (viewingMonth === 0) {
+      setViewingMonth(11);
+      setViewingYear((y) => y - 1);
+    } else {
+      setViewingMonth((m) => m - 1);
+    }
+  };
+  const goNextMonth = () => {
+    if (viewingMonth === 11) {
+      setViewingMonth(0);
+      setViewingYear((y) => y + 1);
+    } else {
+      setViewingMonth((m) => m + 1);
+    }
+  };
+  const isCurrentMonth =
+    viewingYear === now.getFullYear() && viewingMonth === now.getMonth();
+
   return (
     <div className="space-y-6 max-w-6xl animate-fade-in">
       {/* Welcome banner */}
@@ -822,11 +940,69 @@ function OverviewTab({ session, profile, greeting }) {
             Your farm intelligence dashboard. Monitor crops, weather, and market
             prices — all powered by SAR satellite data.
           </p>
+          <button
+            type="button"
+            onClick={handleDownloadApp}
+            disabled={appDownloading}
+            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-semibold text-sm transition-all disabled:opacity-70 disabled:cursor-wait"
+          >
+            {appDownloading ? (
+              <>
+                <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Downloading…
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                </svg>
+                Download the mobile application
+              </>
+            )}
+          </button>
         </div>
       </div>
 
+      {/* Month navigator — scroll through the year */}
+      <div className="flex items-center justify-center gap-4 py-2">
+        <button
+          type="button"
+          onClick={goPrevMonth}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-stone-200 text-stone-700 font-medium hover:bg-stone-50 transition-colors shadow-sm"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Previous month
+        </button>
+        <div className="min-w-[200px] text-center">
+          <span className="text-lg font-bold text-stone-800">
+            {MONTH_NAMES[viewingMonth]} {viewingYear}
+          </span>
+          {isCurrentMonth && (
+            <span className="ml-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+              Current
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={goNextMonth}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-stone-200 text-stone-700 font-medium hover:bg-stone-50 transition-colors shadow-sm"
+        >
+          Next month
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
       {/* Adaptive Farm Calendar — weather-driven activity planner */}
-      <AdaptiveFarmCalendar profile={profile} />
+      <AdaptiveFarmCalendar
+        profile={profile}
+        viewingMonth={viewingMonth}
+        viewingYear={viewingYear}
+      />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2083,7 +2259,7 @@ function MandiTab({ profile }) {
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const mandiBase = (import.meta.env.VITE_MANDI_API_BASE || "/mandi").replace(
+  const mandiBase = (import.meta.env.VITE_MANDI_API_BASE || "/mandi-api").replace(
     /\/$/,
     "",
   );

@@ -19,11 +19,8 @@ function App() {
 
         {/* Logo */}
         <div className="relative animate-float">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-glow-emerald flex items-center justify-center">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c-1.2 0-4.8 1.6-4.8 6.4 0 2.4.8 4 2.4 5.2V21h4.8v-6.4c1.6-1.2 2.4-2.8 2.4-5.2C16.8 4.6 13.2 3 12 3z" />
-              <path strokeLinecap="round" d="M12 3v6" />
-            </svg>
+          <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-glow-emerald bg-white/5 flex items-center justify-center">
+            <img src="/tea.png" alt="BeejRakshak" className="w-full h-full object-contain p-1" />
           </div>
         </div>
 
