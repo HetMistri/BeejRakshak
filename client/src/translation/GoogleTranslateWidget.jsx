@@ -1,24 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
 
 const GOOGLE_TRANSLATE_SCRIPT_ID = 'google-translate-script'
+let googleScriptPromise
 
 function loadGoogleTranslateScript() {
-  return new Promise((resolve) => {
-    if (document.getElementById(GOOGLE_TRANSLATE_SCRIPT_ID)) {
+  if (googleScriptPromise) return googleScriptPromise
+
+  googleScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById(GOOGLE_TRANSLATE_SCRIPT_ID)
+
+    const handleReady = () => {
       resolve()
-      return
     }
 
-    window.googleTranslateElementInit = () => {
-      resolve()
+    window.googleTranslateElementInit = handleReady
+
+    if (existing) {
+      if (window.google?.translate?.TranslateElement) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', handleReady)
+      existing.addEventListener('error', () => reject(new Error('Failed to load Google Translate.')))
+      return
     }
 
     const script = document.createElement('script')
     script.id = GOOGLE_TRANSLATE_SCRIPT_ID
     script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
     script.async = true
+    script.addEventListener('load', handleReady)
+    script.addEventListener('error', () => reject(new Error('Failed to load Google Translate.')))
     document.body.appendChild(script)
   })
+
+  return googleScriptPromise
 }
 
 function getGoogleTranslateCookie() {
@@ -45,14 +61,20 @@ function setGoogleTranslateLanguage(langCode) {
 export default function GoogleTranslateWidget({ className = '' }) {
   const containerRef = useRef(null)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState('')
   const [currentLang, setCurrentLang] = useState('en')
 
   useEffect(() => {
-    loadGoogleTranslateScript().then(() => {
-      if (containerRef.current && window.google?.translate?.TranslateElement) {
+    loadGoogleTranslateScript()
+      .then(() => {
+        if (!containerRef.current || !window.google?.translate?.TranslateElement) {
+          setError('Google Translate is unavailable.')
+          return
+        }
+
         // Clear any existing widget
         containerRef.current.innerHTML = ''
-        
+
         new window.google.translate.TranslateElement(
           {
             pageLanguage: 'en',
@@ -63,8 +85,10 @@ export default function GoogleTranslateWidget({ className = '' }) {
           containerRef.current,
         )
         setLoaded(true)
-      }
-    })
+      })
+      .catch((err) => {
+        setError(err?.message || 'Google Translate is unavailable.')
+      })
 
     // Check current language from cookie
     setCurrentLang(getGoogleTranslateCookie())
@@ -73,10 +97,16 @@ export default function GoogleTranslateWidget({ className = '' }) {
   return (
     <div className={`google-translate-container ${className}`} data-no-translate="true">
       <div ref={containerRef} />
-      {!loaded && (
+      {!loaded && !error && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 bg-white/70 text-stone-500 text-sm">
           <span>🌐</span>
           <span>Loading...</span>
+        </div>
+      )}
+      {!loaded && error && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-sm">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
     </div>
