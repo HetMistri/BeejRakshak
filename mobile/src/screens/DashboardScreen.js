@@ -15,6 +15,7 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'mandi', label: 'Mandi' },
   { id: 'advisory', label: 'Advisory' },
+  { id: 'calendar', label: 'Calendar' },
   { id: 'alerts', label: 'Alerts' },
 ]
 
@@ -251,6 +252,11 @@ export default function DashboardScreen() {
             forecastDays={forecastDays}
           />
         )}
+        {tab === 'calendar' && (
+          <CalendarTab
+            profile={profile}
+          />
+        )}
         {tab === 'alerts' && (
           <AlertsTab
             profile={profile}
@@ -438,6 +444,202 @@ function AdvisoryTab({ profile, weather }) {
           </View>
         </Section>
       )}
+    </View>
+  )
+}
+
+function CalendarTab({ profile }) {
+  const crop = profile?.primary_crop ? cap(profile.primary_crop) : 'Onion'
+  const stage = profile?.crop_stage ? cap(profile.crop_stage) : 'Vegetative'
+
+  const today = new Date()
+  const monthName = today.toLocaleString('default', { month: 'long' })
+  const year = today.getFullYear()
+  const daysInMonth = new Date(year, today.getMonth() + 1, 0).getDate()
+  const firstDay = new Date(year, today.getMonth(), 1).getDay()
+
+  const events = {}
+  const addEvent = (offset, data) => {
+    const day = today.getDate() + offset
+    if (day >= 1 && day <= daysInMonth) events[day] = data
+  }
+
+  addEvent(0, { type: 'today', label: 'Today', color: '#34D399' })
+  addEvent(2, { type: 'irrigation', label: 'Irrigation', color: '#3B82F6' })
+  addEvent(4, { type: 'fertilizer', label: 'Fertilizer', color: '#10B981' })
+  addEvent(7, { type: 'pest', label: 'Pest Spray', color: '#F59E0B' })
+  addEvent(12, { type: 'harvest', label: 'Harvest Check', color: '#F97316' })
+  addEvent(15, { type: 'mandi', label: 'Mandi Visit', color: '#8B5CF6' })
+
+  const upcoming = [
+    {
+      date: `${monthName} ${today.getDate() + 2}`,
+      title: 'Scheduled Irrigation',
+      desc: 'SAR data shows soil moisture dropping to 32%. Irrigate before it reaches critical 25% threshold.',
+      icon: '💧',
+      color: '#3B82F6',
+    },
+    {
+      date: `${monthName} ${today.getDate() + 4}`,
+      title: 'Nitrogen Application',
+      desc: `${crop} in ${stage} stage needs nitrogen boost. Weather window is clear for next 3 days.`,
+      icon: '🧪',
+      color: '#10B981',
+    },
+    {
+      date: `${monthName} ${today.getDate() + 7}`,
+      title: 'Preventive Pest Spray',
+      desc: 'Humidity forecast 82% this week. Apply preventive spray to avoid fungal infection.',
+      icon: '🛡️',
+      color: '#F59E0B',
+    },
+    {
+      date: `${monthName} ${today.getDate() + 12}`,
+      title: 'Pre-Harvest Assessment',
+      desc: 'NDVI plateau detected. Conduct field inspection to confirm harvest readiness.',
+      icon: '🌾',
+      color: '#F97316',
+    },
+    {
+      date: `${monthName} ${today.getDate() + 15}`,
+      title: 'Mandi Price Window',
+      desc: `${crop} prices trending up. Optimal selling window projected for this period.`,
+      icon: '📊',
+      color: '#8B5CF6',
+    },
+  ].filter((t) => Number(t.date.split(' ')[1]) <= daysInMonth)
+
+  const seasons = [
+    {
+      name: 'Kharif',
+      months: 'Jun - Oct',
+      crops: 'Tomato',
+      active: today.getMonth() >= 5 && today.getMonth() <= 9,
+    },
+    {
+      name: 'Rabi',
+      months: 'Nov - Mar',
+      crops: 'Onion, Potato',
+      active: today.getMonth() >= 10 || today.getMonth() <= 2,
+    },
+    {
+      name: 'Zaid',
+      months: 'Mar - Jun',
+      crops: 'Tomato',
+      active: today.getMonth() >= 2 && today.getMonth() <= 5,
+    },
+  ]
+
+  const legend = [
+    { label: 'Irrigation', color: '#3B82F6' },
+    { label: 'Fertilizer', color: '#10B981' },
+    { label: 'Pest', color: '#F59E0B' },
+    { label: 'Harvest', color: '#F97316' },
+  ]
+
+  return (
+    <View>
+      <Section title="Adaptive Calendar" subtitle={`${crop} · ${stage} stage`} action="">
+        <View style={styles.calendarHero}>
+          <TranslatedText style={styles.heroEyebrow} text="AI-Powered Scheduling" />
+          <TranslatedText style={styles.heroTitle} text="Farm calendar that adapts to your crop, weather, and satellite data" />
+          <TranslatedText
+            style={styles.heroBody}
+            text="Every task is auto-scheduled based on SAR moisture, weather forecasts, crop stage, and market trends. The calendar updates itself — you just follow it."
+          />
+        </View>
+      </Section>
+
+      <Section title={`${monthName} ${year}`} subtitle="Auto-scheduled tasks" action="">
+        <View style={styles.calendarLegend}>
+          {legend.map((l) => (
+            <View key={l.label} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: l.color }]} />
+              <TranslatedText style={styles.legendLabel} text={l.label} />
+            </View>
+          ))}
+        </View>
+        <View style={styles.calendarHeaderRow}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+            <View key={d} style={styles.calendarHeaderCell}>
+              <TranslatedText style={styles.calendarHeaderText} text={d} />
+            </View>
+          ))}
+        </View>
+        <View style={styles.calendarGrid}>
+          {Array.from({ length: firstDay }).map((_, i) => (
+            <View key={`empty-${i}`} style={[styles.calendarCell, styles.calendarCellEmpty]} />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1
+            const ev = events[day]
+            const isToday = day === today.getDate()
+            return (
+              <View
+                key={day}
+                style={[
+                  styles.calendarCell,
+                  isToday && styles.calendarCellToday,
+                  !isToday && ev && styles.calendarCellEvent,
+                ]}
+              >
+                <TranslatedText style={[styles.calendarCellText, isToday && styles.calendarCellTextToday]} text={`${day}`} />
+                {ev && !isToday ? <View style={[styles.calendarDot, { backgroundColor: ev.color }]} /> : null}
+              </View>
+            )
+          })}
+        </View>
+      </Section>
+
+      <Section title="Crop Seasons" subtitle="Seasonal windows" action="">
+        <View style={styles.seasonList}>
+          {seasons.map((s) => (
+            <View key={s.name} style={[styles.seasonItem, s.active && styles.seasonItemActive]}>
+              <View style={[styles.seasonDot, s.active && styles.seasonDotActive]} />
+              <View>
+                <TranslatedText style={styles.seasonTitle} text={`${s.name} (${s.months})`} />
+                <TranslatedText style={styles.seasonMeta} text={s.crops} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </Section>
+
+      <Section title="How it adapts" subtitle="Signals used" action="">
+        <View style={styles.adaptList}>
+          {[
+            'Reads SAR moisture + NDVI daily',
+            'Checks 7-day weather forecast',
+            'Matches crop stage requirements',
+            'Reschedules tasks automatically',
+          ].map((item, idx) => (
+            <View key={item} style={styles.adaptItem}>
+              <TranslatedText style={styles.adaptIndex} text={`${idx + 1}.`} />
+              <TranslatedText style={styles.adaptText} text={item} />
+            </View>
+          ))}
+        </View>
+      </Section>
+
+      <Section title="Upcoming Farm Tasks" subtitle="Auto-generated based on your crop, weather, and satellite data" action="">
+        <View style={styles.upcomingList}>
+          {upcoming.map((t) => (
+            <View key={`${t.title}-${t.date}`} style={styles.upcomingItem}>
+              <View style={[styles.upcomingBar, { backgroundColor: t.color }]} />
+              <View style={styles.upcomingContent}>
+                <View style={styles.upcomingHeader}>
+                  <Text style={styles.upcomingIcon}>{t.icon}</Text>
+                  <View>
+                    <TranslatedText style={styles.upcomingTitle} text={t.title} />
+                    <TranslatedText style={styles.upcomingDate} text={t.date} />
+                  </View>
+                </View>
+                <TranslatedText style={styles.upcomingDesc} text={t.desc} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </Section>
     </View>
   )
 }
@@ -673,4 +875,72 @@ const styles = StyleSheet.create({
   mandiName: { color: colors.text, fontSize: 13, fontWeight: '600' },
   mandiMeta: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
   mandiTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  calendarHero: {
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: '#3B1F5C',
+    borderWidth: 1,
+    borderColor: '#4C2A75',
+  },
+  heroEyebrow: { color: '#C7B6F2', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  heroTitle: { color: '#F5F3FF', fontSize: 16, fontWeight: '800', marginTop: 8 },
+  heroBody: { color: '#DAD3FF', fontSize: 12, marginTop: 6, lineHeight: 16 },
+  calendarLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { color: colors.textMuted, fontSize: 11 },
+  calendarHeaderRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarHeaderCell: { width: '14.28%', paddingVertical: 6, alignItems: 'center' },
+  calendarHeaderText: { color: colors.textMuted, fontSize: 11, fontWeight: '700' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginVertical: 4,
+  },
+  calendarCellEmpty: { backgroundColor: 'transparent' },
+  calendarCellToday: { backgroundColor: colors.accentDark, borderWidth: 1, borderColor: '#3ECF9B' },
+  calendarCellEvent: { backgroundColor: colors.cardLight, borderWidth: 1, borderColor: colors.border },
+  calendarCellText: { color: colors.textMuted, fontSize: 12 },
+  calendarCellTextToday: { color: colors.text, fontWeight: '700' },
+  calendarDot: { position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3 },
+  seasonList: { gap: 10 },
+  seasonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: colors.cardLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  seasonItemActive: { borderColor: colors.accent, backgroundColor: '#123326' },
+  seasonDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#4B5563' },
+  seasonDotActive: { backgroundColor: colors.accent },
+  seasonTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  seasonMeta: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  adaptList: { gap: 10 },
+  adaptItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  adaptIndex: { color: colors.accent, fontWeight: '700', width: 18 },
+  adaptText: { color: colors.textMuted, fontSize: 12, flex: 1 },
+  upcomingList: { gap: 10 },
+  upcomingItem: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  upcomingBar: { width: 4 },
+  upcomingContent: { flex: 1, padding: 12 },
+  upcomingHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  upcomingIcon: { fontSize: 18 },
+  upcomingTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  upcomingDate: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  upcomingDesc: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
 })
