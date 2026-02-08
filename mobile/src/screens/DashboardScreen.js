@@ -369,13 +369,23 @@ function MandiTab({ profile, mandisList, availableCrops, selectedCrop, setSelect
   )
 }
 
-function AdvisoryTab({ profile, weather, forecastDays }) {
+function AdvisoryTab({ profile, weather }) {
   const locationName = weather?.name || profile?.village || profile?.district || 'your area'
   const temp = weather?.main?.temp
+  const humidity = weather?.main?.humidity
+  const clouds = weather?.clouds?.all
   const wind = weather?.wind?.speed ? (weather.wind.speed * 3.6) : null
+  const season = getCurrentSeason()
+
   const advisoryText = temp
     ? `Current ${temp.toFixed(1)}°C in ${locationName}. ${temp > 32 ? 'Avoid midday spray.' : 'Good window for field tasks.'}`
     : 'Weather insights will appear once data is available.'
+
+  const suitability = computeCropSuitabilitySummary({ temp, humidity, clouds, season })
+  const recommended = suitability.filter((c) => c.score >= 60)
+  const other = suitability.filter((c) => c.score < 60)
+  const farmerCrop = profile?.primary_crop ? profile.primary_crop.toLowerCase() : ''
+  const farmerCropData = suitability.find((c) => c.name.toLowerCase() === farmerCrop)
 
   return (
     <View>
@@ -390,13 +400,38 @@ function AdvisoryTab({ profile, weather, forecastDays }) {
           </View>
         </View>
       </Section>
-      <Section title="Recommended Crops" subtitle="Based on this week">
+
+      {farmerCropData && (
+        <Section title="Your Crop" subtitle={`${cap(farmerCropData.season)} crop · ${farmerCropData.duration}`} action="">
+          <View style={styles.mandiMini}>
+            <Text style={styles.mandiName}>{farmerCropData.name}</Text>
+            <Text style={styles.mandiMeta}>Suitability: {farmerCropData.score}%</Text>
+            <View style={styles.pillRow}>
+              {farmerCropData.score >= 70 && <Badge label="Great fit" tone="accent" />}
+              {farmerCropData.score < 70 && farmerCropData.score >= 40 && <Badge label="Monitor" tone="warn" />}
+              {farmerCropData.score < 40 && <Badge label="Risky" tone="muted" />}
+            </View>
+          </View>
+        </Section>
+      )}
+
+      <Section title="Recommended Crops" subtitle={`Based on ${locationName} weather`}>
         <View style={styles.pillRow}>
-          <Badge label="Onion" tone="accent" />
-          <Badge label="Tomato" />
-          <Badge label="Potato" />
+          {(recommended.length ? recommended : suitability).slice(0, 3).map((crop) => (
+            <Badge key={crop.name} label={crop.name} tone={crop.score >= 70 ? 'accent' : 'muted'} />
+          ))}
         </View>
       </Section>
+
+      {other.length > 0 && (
+        <Section title="Not Ideal Now" subtitle="Lower suitability this week" action="">
+          <View style={styles.pillRow}>
+            {other.map((crop) => (
+              <Badge key={crop.name} label={crop.name} tone="muted" />
+            ))}
+          </View>
+        </Section>
+      )}
     </View>
   )
 }
@@ -529,6 +564,39 @@ function cap(text) {
 function forecastDaysFromWeather(current) {
   return Boolean(current)
 }
+
+function getCurrentSeason() {
+  const m = new Date().getMonth()
+  if (m >= 5 && m <= 9) return 'kharif'
+  if (m >= 10 || m <= 2) return 'rabi'
+  return 'zaid'
+}
+
+function computeCropSuitabilitySummary({ temp, humidity, clouds, season }) {
+  const t = typeof temp === 'number' ? temp : 26
+  const h = typeof humidity === 'number' ? humidity : 60
+  const c = typeof clouds === 'number' ? clouds : 30
+
+  return CROP_DATABASE.map((crop) => {
+    const [tMin, tMax] = crop.tempRange
+    const [hMin, hMax] = crop.humRange
+    let score = 0
+
+    const tempScore = t >= tMin && t <= tMax ? 30 : Math.max(0, 20 - Math.abs(t - (tMin + tMax) / 2))
+    const humScore = h >= hMin && h <= hMax ? 20 : Math.max(0, 15 - Math.abs(h - (hMin + hMax) / 2) / 2)
+    const seasonScore = crop.season === season ? 30 : 15
+    const sunScore = crop.waterNeed === 'High' ? (c > 40 ? 6 : 10) : (c < 50 ? 10 : 6)
+
+    score = Math.round(tempScore + humScore + seasonScore + sunScore)
+    return { ...crop, score }
+  }).sort((a, b) => b.score - a.score)
+}
+
+const CROP_DATABASE = [
+  { name: 'Onion', season: 'rabi', tempRange: [13, 30], humRange: [40, 70], waterNeed: 'Medium', duration: '120-150 days' },
+  { name: 'Tomato', season: 'zaid', tempRange: [18, 35], humRange: [40, 70], waterNeed: 'Medium', duration: '60-90 days' },
+  { name: 'Potato', season: 'rabi', tempRange: [10, 25], humRange: [40, 70], waterNeed: 'Medium', duration: '80-120 days' },
+]
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },

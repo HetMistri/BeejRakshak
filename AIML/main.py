@@ -38,6 +38,7 @@ app.add_middleware(
     allow_origins=[
         "https://beej-rakshak.vercel.app",
         "http://localhost:3000",
+        "http://localhost:8081",
     ],
     allow_credentials=True,
     allow_methods=["*"],
